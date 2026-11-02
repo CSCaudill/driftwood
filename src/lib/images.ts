@@ -67,3 +67,19 @@ async function readTakenAt(file: File): Promise<string | null> {
   }
   return null;
 }
+
+/** Square, center-cropped avatar for a person. */
+export async function processAvatar(file: File, size = 320): Promise<Blob> {
+  const bitmap = await decode(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, size, size);
+  if ('close' in bitmap) bitmap.close();
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not encode image'))), 'image/jpeg', 0.85),
+  );
+}

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
-import { getSettings } from '../db/repo';
-import { DEFAULT_SETTINGS, type Chapter, type Memory, type Photo, type Settings } from '../types';
+import { getReflection, getSettings } from '../db/repo';
+import { DEFAULT_SETTINGS, type Chapter, type Memory, type Person, type Photo, type Recording, type Settings } from '../types';
 
 export function useSettings(): Settings & { loaded: boolean } {
   const s = useLiveQuery(() => getSettings(), [], null);
@@ -27,7 +27,6 @@ export function usePhotos(ids: string[]): Photo[] {
     if (!ids.length) return [];
     const found = await db.photos.bulkGet(ids);
     return found.filter((p): p is Photo => !!p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return rows ?? [];
 }
@@ -55,4 +54,31 @@ export function useMediaQuery(query: string): boolean {
     return () => mq.removeEventListener('change', onChange);
   }, [query]);
   return matches;
+}
+
+export function usePeople(): Person[] | undefined {
+  return useLiveQuery(() => db.people.orderBy('name').toArray(), []);
+}
+
+/** id → Person lookup for rendering names and avatars. */
+export function usePeopleMap(): Map<string, Person> {
+  const people = usePeople();
+  return useMemo(() => new Map((people ?? []).map((p) => [p.id, p])), [people]);
+}
+
+export function usePerson(id: string | undefined): Person | null | undefined {
+  return useLiveQuery(async () => (id ? (await db.people.get(id)) ?? null : null), [id]);
+}
+
+export function useRecordings(memoryId: string | undefined): Recording[] {
+  return (
+    useLiveQuery(
+      async () => (memoryId ? (await db.recordings.where('memoryId').equals(memoryId).sortBy('createdAt')) : []),
+      [memoryId],
+    ) ?? []
+  );
+}
+
+export function useReflection() {
+  return useLiveQuery(() => getReflection(), []);
 }

@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowDownUp, Plus, Search, Sparkles, Star, X } from 'lucide-react';
 import { ArrangeList } from '../components/ArrangeList';
-import { MemoryEntry } from '../components/MemoryEntry';
+import { YearBlock } from '../components/YearBlock';
 import { PromptCard } from '../components/PromptCard';
 import { Button, Chip, EmptyState, IconButton, cx } from '../components/ui';
 import { useChapters, useMemories, useSettings } from '../hooks/data';
@@ -10,6 +11,8 @@ import { chapterVar, FEELINGS } from '../lib/meta';
 import { buildSections } from '../lib/ordering';
 import { currentYear } from '../lib/fuzzyDate';
 import { useApp } from '../state/app';
+import { usePeopleLookup } from '../state/people';
+import { PersonAvatar } from '../components/People';
 import type { Chapter, Feeling, Memory } from '../types';
 
 type Row =
@@ -26,20 +29,38 @@ export function TimelineScreen() {
   const [query, setQuery] = useState('');
   const [favOnly, setFavOnly] = useState(false);
   const [feeling, setFeeling] = useState<Feeling | null>(null);
+  const [personId, setPersonId] = useState<string | null>(null);
+  const peopleMap = usePeopleLookup();
   const searchInput = useRef<HTMLInputElement>(null);
 
-  const filtering = !!query.trim() || favOnly || !!feeling;
+  const filtering = !!query.trim() || favOnly || !!feeling || !!personId;
   const filtered = useMemo(() => {
     if (!memories) return [];
     const q = query.trim().toLowerCase();
     return memories.filter((m) => {
       if (favOnly && !m.favorite) return false;
       if (feeling && m.feeling !== feeling) return false;
+      if (personId && !m.personIds.includes(personId)) return false;
       if (!q) return true;
-      const hay = [m.title, m.notes, m.location, ...m.people, ...m.tags].join(' ').toLowerCase();
+      const names = m.personIds.map((id) => {
+        const p = peopleMap.get(id);
+        return p ? `${p.name} ${p.relationship}` : '';
+      });
+      const hay = [m.title, m.notes, m.location, ...names, ...m.tags].join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [memories, query, favOnly, feeling]);
+  }, [memories, query, favOnly, feeling, personId, peopleMap]);
+
+  // People who appear most, for the filter row.
+  const topPeople = useMemo(() => {
+    const f = new Map<string, number>();
+    for (const m of memories ?? []) for (const id of m.personIds) f.set(id, (f.get(id) ?? 0) + 1);
+    return [...f.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => peopleMap.get(id))
+      .filter((p): p is NonNullable<typeof p> => !!p)
+      .slice(0, 10);
+  }, [memories, peopleMap]);
 
   const sections = useMemo(() => buildSections(filtered), [filtered]);
   const unplacedCount = memories?.filter((m) => m.groupYear == null).length ?? 0;
@@ -86,11 +107,13 @@ export function TimelineScreen() {
               {settings.name ? `${settings.name}’s timeline` : 'Your timeline'}
             </h1>
             <p className="text-[0.8rem] text-graphite">
-              {placed === 0 ? 'Nothing placed yet' : `${placed} ${placed === 1 ? 'memory' : 'memories'} across ${sections.length} ${sections.length === 1 ? 'year' : 'years'}`}
+              {filtering
+                ? `${sections.reduce((n, s) => n + s.items.length, 0)} matching`
+                : placed === 0 ? 'Nothing placed yet' : `${placed} ${placed === 1 ? 'memory' : 'memories'} across ${sections.length} ${sections.length === 1 ? 'year' : 'years'}`}
             </p>
           </div>
           {!arranging && (
-            <IconButton label="Search memories" active={searching} onClick={() => { setSearching((s) => !s); if (searching) { setQuery(''); setFavOnly(false); setFeeling(null); } }}>
+            <IconButton label="Search memories" active={searching} onClick={() => { setSearching((s) => !s); if (searching) { setQuery(''); setFavOnly(false); setFeeling(null); setPersonId(null); } }}>
               <Search size={20} />
             </IconButton>
           )}
@@ -113,7 +136,7 @@ export function TimelineScreen() {
                 ref={searchInput}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search titles, notes, people, places"
+                placeholder="Search memories, people, places"
                 className="h-11 w-full rounded-xl border border-line bg-paper pl-10 pr-10 focus:border-tide focus:outline-none focus:ring-3 focus:ring-tide-wash"
               />
               {query && (
@@ -122,7 +145,17 @@ export function TimelineScreen() {
                 </button>
               )}
             </div>
-            <div className="no-scrollbar -mx-4 mt-2.5 flex gap-2 overflow-x-auto px-4">
+            {topPeople.length > 0 && (
+              <div className="no-scrollbar -mx-4 mt-2.5 flex gap-2 overflow-x-auto px-4" aria-label="Filter by person">
+                {topPeople.map((p) => (
+                  <Chip key={p.id} selected={personId === p.id} onClick={() => setPersonId(personId === p.id ? null : p.id)} className="shrink-0 pl-1">
+                    <PersonAvatar person={p} size={22} />
+                    {p.name}
+                  </Chip>
+                ))}
+              </div>
+            )}
+            <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4">
               <Chip selected={favOnly} onClick={() => setFavOnly((f) => !f)}>
                 <Star size={13} className={favOnly ? 'fill-current' : ''} /> Favorites
               </Chip>
@@ -161,6 +194,18 @@ export function TimelineScreen() {
         </>
       ) : (
         <div className="relative pb-32" style={{ ['--spine-x' as string]: '4.75rem' }}>
+          {!filtering && unplacedCount > 0 && (
+            <Link
+              to="/unplaced"
+              className="mb-3 mt-2 flex items-center gap-3 rounded-2xl border border-line bg-paper px-4 py-3 text-sm hover:border-tide"
+            >
+              <span className="h-2 w-2 rounded-full bg-lantern" aria-hidden />
+              <span className="flex-1">
+                {unplacedCount} {unplacedCount === 1 ? 'memory is' : 'memories are'} waiting for a date
+              </span>
+              <span className="font-medium text-tide">Place</span>
+            </Link>
+          )}
           {!filtering && <PromptCard />}
 
           {filtering && sections.length === 0 && (
@@ -223,40 +268,6 @@ function chapterFor(chapters: Chapter[], year: number) {
   return chapters
     .filter((c) => year >= c.startYear && year <= c.endYear)
     .sort((a, b) => a.endYear - a.startYear - (b.endYear - b.startYear))[0];
-}
-
-function YearBlock({
-  year,
-  birthYear,
-  items,
-  chapter,
-  lastTouched,
-}: {
-  year: number;
-  birthYear: number | null;
-  items: Memory[];
-  chapter?: Chapter;
-  lastTouched: string | null;
-}) {
-  const age = birthYear != null ? year - birthYear : null;
-  return (
-    <section id={`y-${year}`} aria-label={String(year)} className="relative flex scroll-mt-24">
-      <div className="w-[var(--spine-x)] shrink-0 pr-3">
-        <div className="sticky top-20 pt-2.5">
-          <div className="year-numeral text-[2rem] leading-none text-ink">{year}</div>
-          {age != null && age >= 0 && <div className="mt-1 text-xs text-graphite">{age === 0 ? 'Birth year' : `Age ${age}`}</div>}
-        </div>
-      </div>
-      <ol
-        className="relative min-w-0 flex-1 border-l-2 pb-6 pl-5"
-        style={{ borderColor: chapter ? chapterVar(chapter.color) : 'var(--line)' }}
-      >
-        {items.map((m) => (
-          <MemoryEntry key={m.id} memory={m} birthYear={birthYear} highlight={lastTouched === m.id} />
-        ))}
-      </ol>
-    </section>
-  );
 }
 
 function ChapterHeading({ chapter }: { chapter: Chapter }) {

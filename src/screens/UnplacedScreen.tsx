@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarPlus, CornerDownLeft } from 'lucide-react';
 import { Button, EmptyState } from '../components/ui';
+import { DictateButton } from '../components/Voice';
 import { createMemory, emptyDraft } from '../db/repo';
 import { useMemories } from '../hooks/data';
 import { useApp } from '../state/app';
@@ -55,6 +56,9 @@ export function UnplacedScreen() {
           </Button>
         </div>
       </form>
+      <div className="mt-2 px-1">
+        <DictateButton label="Say it instead" onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />
+      </div>
 
       {unplaced.length === 0 ? (
         <EmptyState title="Nothing waiting">

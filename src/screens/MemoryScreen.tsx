@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Pencil, Star, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Pencil, Star, Trash2 } from 'lucide-react';
+import { PersonAvatar } from '../components/People';
+import { VoicePlayer } from '../components/Voice';
+import { useResolvedPeople } from '../state/people';
 import { Button, IconButton, Sheet, cx } from '../components/ui';
 import { db } from '../db/db';
 import { deleteMemory, toggleFavorite, restoreMemories } from '../db/repo';
-import { useChapters, useMemories, useMemory, usePhotos, useBlobUrl, useSettings } from '../hooks/data';
+import { useChapters, useMemories, useMemory, usePhotos, useBlobUrl, useRecordings, useSettings } from '../hooks/data';
 import { formatFuzzyDate, precisionLabel } from '../lib/fuzzyDate';
 import { CLARITY, chapterVar, feelingMeta } from '../lib/meta';
 import { buildSections } from '../lib/ordering';
@@ -19,6 +22,8 @@ export function MemoryScreen() {
   const settings = useSettings();
   const chapters = useChapters();
   const photos = usePhotos(memory?.photoIds ?? []);
+  const people = useResolvedPeople(memory?.personIds ?? []);
+  const recordings = useRecordings(memory?.id);
   const navigate = useNavigate();
   const { openEditor, showToast } = useApp();
   const [confirming, setConfirming] = useState(false);
@@ -55,6 +60,7 @@ export function MemoryScreen() {
   const remove = async () => {
     const snapshot = memory;
     const photoRows = await db.photos.where('memoryId').equals(memory.id).toArray();
+    const recordingRows = await db.recordings.where('memoryId').equals(memory.id).toArray();
     await deleteMemory(memory.id);
     navigate(-1);
     showToast('Memory deleted', {
@@ -62,6 +68,7 @@ export function MemoryScreen() {
       run: async () => {
         await restoreMemories([snapshot]);
         await db.photos.bulkPut(photoRows);
+        await db.recordings.bulkPut(recordingRows);
       },
     });
   };
@@ -122,14 +129,36 @@ export function MemoryScreen() {
               <dd>{memory.location}</dd>
             </div>
           )}
-          {memory.people.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">People</dt>
-              <Users size={14} />
-              <dd>{memory.people.join(', ')}</dd>
-            </div>
-          )}
+
         </dl>
+
+        {people.length > 0 && (
+          <div className="mt-5">
+            <h2 className="sr-only">People</h2>
+            <ul className="flex flex-wrap gap-2">
+              {people.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    to={`/people/${p.id}`}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-paper py-1 pl-1 pr-3.5 text-sm hover:border-tide"
+                  >
+                    <PersonAvatar person={p} size={32} />
+                    <span className="font-medium">{p.name}</span>
+                    {p.relationship && p.relationship !== p.name && <span className="text-faint">{p.relationship}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {recordings.length > 0 && (
+          <div className="mt-5 space-y-2">
+            {recordings.map((r) => (
+              <VoicePlayer key={r.id} blob={r.blob} durationMs={r.durationMs} />
+            ))}
+          </div>
+        )}
 
         {prompt && (
           <p className="reading mt-6 border-l-2 border-tide pl-4 text-[0.95rem] italic text-graphite">{prompt.text}</p>

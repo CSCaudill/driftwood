@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LifelineDB } from './db';
-import { createMemory, emptyDraft, moveMemory, updateMemory, updateSettings } from './repo';
+import Dexie from 'dexie';
+import { createMemory, createPerson, deletePerson, emptyDraft, moveMemory, updateMemory, updateSettings } from './repo';
 import { orderSection } from '../lib/ordering';
 
 let store: LifelineDB;
@@ -58,5 +59,38 @@ describe('repo', () => {
     const moved = await updateMemory(a.id, { date: { precision: 'year', year: 2000 } }, store);
     expect(moved.rank).toBeNull();
     expect(moved.groupYear).toBe(2000);
+  });
+});
+
+describe('people', () => {
+  it('migrates v1 name tags into people records', async () => {
+    const name = 'migrate-' + Math.random();
+    const v1 = new Dexie(name);
+    v1.version(1).stores({ memories: 'id, groupYear, sortStart, updatedAt, createdAt, favorite, *tags, *people', photos: 'id, memoryId', chapters: 'id, startYear', meta: 'key' });
+    await v1.table('memories').bulkAdd([
+      { id: 'a', title: 'a', people: ['Mom', 'Danny'], tags: [], groupYear: 1990, sortStart: '1990-01-01', createdAt: 1, updatedAt: 1, favorite: false },
+      { id: 'b', title: 'b', people: ['mom '], tags: [], groupYear: 1991, sortStart: '1991-01-01', createdAt: 1, updatedAt: 1, favorite: false },
+    ]);
+    v1.close();
+
+    const v2 = new LifelineDB(name);
+    await v2.open();
+    const people = await v2.people.toArray();
+    expect(people.map((p) => p.name).sort()).toEqual(['Danny', 'Mom']);
+    const a = await v2.memories.get('a');
+    const b = await v2.memories.get('b');
+    const mom = people.find((p) => p.name === 'Mom')!;
+    expect(a!.personIds).toContain(mom.id);
+    expect(b!.personIds).toEqual([mom.id]);
+    expect((a as unknown as { people?: unknown }).people).toBeUndefined();
+    expect((await v2.memories.where('personIds').equals(mom.id).toArray()).length).toBe(2);
+  });
+
+  it('removes a deleted person from every memory', async () => {
+    const p = await createPerson({ name: 'Grandpa', relationship: 'Grandpa', avatar: null, notes: '' }, store);
+    const m = await createMemory(emptyDraft({ title: 'shop', personIds: [p.id] }), store);
+    await deletePerson(p.id, store);
+    expect((await store.memories.get(m.id))!.personIds).toEqual([]);
+    expect(await store.people.get(p.id)).toBeUndefined();
   });
 });

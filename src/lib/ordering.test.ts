@@ -48,3 +48,22 @@ describe('buildSections & gaps', () => {
     expect(findGaps([1990, 1991, 1995, 1997])).toEqual([[1992, 1994], [1996, 1996]]);
   });
 });
+
+import { pickPrompt, suggestTitle, PROMPTS } from './prompts';
+
+describe('reflection prompts', () => {
+  it('prefers unanswered, unseen prompts in the chosen theme', () => {
+    const people = PROMPTS.filter((p) => p.theme === 'people');
+    const answered = new Set(people.slice(0, people.length - 1).map((p) => p.id));
+    const pick = pickPrompt({ theme: 'people', skipped: [], answered, recent: [] });
+    expect(pick?.id).toBe(people[people.length - 1].id);
+  });
+  it('never returns skipped prompts, and returns null when everything is skipped', () => {
+    const senses = PROMPTS.filter((p) => p.theme === 'senses').map((p) => p.id);
+    expect(pickPrompt({ theme: 'senses', skipped: senses, answered: new Set(), recent: [] })).toBeNull();
+  });
+  it('suggests a title from the first sentence', () => {
+    expect(suggestTitle('The kitchen was yellow. Mom sang.')).toBe('The kitchen was yellow');
+    expect(suggestTitle('a'.repeat(10) + ' ' + 'word '.repeat(30)).endsWith('…')).toBe(true);
+  });
+});

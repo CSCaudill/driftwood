@@ -75,3 +75,38 @@ export function dailyPrompt(offset = 0, date = new Date()): ReflectionPrompt {
   const idx = (((day * 7919 + offset) % PROMPTS.length) + PROMPTS.length) % PROMPTS.length;
   return PROMPTS[idx];
 }
+
+/**
+ * Pick the next prompt for the Reflect screen: matching the chosen theme,
+ * skipping ones the person dismissed, preferring ones they haven't answered
+ * or seen recently.
+ */
+export function pickPrompt(opts: {
+  theme: PromptTheme | null;
+  skipped: string[];
+  answered: Set<string>;
+  recent: string[];
+  exclude?: string | null;
+  random?: () => number;
+}): ReflectionPrompt | null {
+  const rand = opts.random ?? Math.random;
+  const base = PROMPTS.filter((p) => (!opts.theme || p.theme === opts.theme) && !opts.skipped.includes(p.id));
+  if (base.length === 0) return null;
+  const tiers = [
+    base.filter((p) => !opts.answered.has(p.id) && !opts.recent.includes(p.id) && p.id !== opts.exclude),
+    base.filter((p) => !opts.answered.has(p.id) && p.id !== opts.exclude),
+    base.filter((p) => p.id !== opts.exclude),
+    base,
+  ];
+  const pool = tiers.find((t) => t.length > 0)!;
+  return pool[Math.floor(rand() * pool.length)];
+}
+
+/** A short title suggestion from the first sentence of free writing. */
+export function suggestTitle(text: string, max = 60): string {
+  const first = text.trim().split(/(?<=[.!?])\s|\n/)[0]?.trim() ?? '';
+  const clean = first.replace(/[.!?]+$/, '');
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  return cut.slice(0, cut.lastIndexOf(' ') > 30 ? cut.lastIndexOf(' ') : max).trim() + '…';
+}

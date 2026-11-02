@@ -5,9 +5,12 @@ import { orderSection, rankForMove } from '../lib/ordering';
 import {
   DEFAULT_SETTINGS,
   type Chapter,
+  type ChapterColor,
   type FuzzyDate,
   type Memory,
+  type Person,
   type Photo,
+  type Recording,
   type Settings,
 } from '../types';
 
@@ -27,7 +30,7 @@ export function emptyDraft(partial: Partial<MemoryDraft> = {}): MemoryDraft {
     notes: '',
     date: { precision: 'unknown' },
     location: '',
-    people: [],
+    personIds: [],
     tags: [],
     feeling: null,
     clarity: 'partial',
@@ -110,8 +113,9 @@ export async function updateMemory(id: string, patch: Partial<MemoryDraft>, stor
 }
 
 export async function deleteMemory(id: string, store: LifelineDB = db) {
-  await store.transaction('rw', store.memories, store.photos, async () => {
+  await store.transaction('rw', store.memories, store.photos, store.recordings, async () => {
     await store.photos.where('memoryId').equals(id).delete();
+    await store.recordings.where('memoryId').equals(id).delete();
     await store.memories.delete(id);
   });
 }
@@ -202,6 +206,105 @@ export async function prunePhotos(memoryId: string, keep: string[], store: Lifel
   if (ids.length) await store.photos.bulkDelete(ids as string[]);
 }
 
+// ---------------------------------------------------------------- recordings
+
+export async function saveRecordings(
+  memoryId: string,
+  recordings: Omit<Recording, 'id' | 'memoryId' | 'createdAt'>[],
+  store: LifelineDB = db,
+): Promise<string[]> {
+  const rows: Recording[] = recordings.map((r) => ({ ...r, id: newId(), memoryId, createdAt: Date.now() }));
+  if (rows.length) await store.recordings.bulkAdd(rows);
+  return rows.map((r) => r.id);
+}
+
+/** Remove recordings attached to a memory that the user deleted in the editor. */
+export async function pruneRecordings(memoryId: string, keep: string[], store: LifelineDB = db) {
+  const keepSet = new Set(keep);
+  const ids = (await store.recordings.where('memoryId').equals(memoryId).primaryKeys()).filter(
+    (id) => !keepSet.has(id as string),
+  );
+  if (ids.length) await store.recordings.bulkDelete(ids as string[]);
+}
+
+// ---------------------------------------------------------------- people
+
+const PERSON_COLORS: ChapterColor[] = ['sage', 'sky', 'clay', 'plum', 'sand', 'rose'];
+
+export type PersonDraft = Pick<Person, 'name' | 'relationship' | 'avatar' | 'notes'> & { color?: ChapterColor };
+
+export async function createPerson(draft: PersonDraft, store: LifelineDB = db): Promise<Person> {
+  const count = await store.people.count();
+  const now = Date.now();
+  const person: Person = {
+    color: PERSON_COLORS[count % PERSON_COLORS.length],
+    ...draft,
+    name: draft.name.trim(),
+    relationship: draft.relationship.trim(),
+    id: newId(),
+    createdAt: now,
+    updatedAt: now,
+  };
+  await store.people.add(person);
+  return person;
+}
+
+/** Find a person by (case-insensitive) name, creating them if needed. */
+export async function findOrCreatePerson(name: string, store: LifelineDB = db): Promise<Person> {
+  const key = name.trim().toLowerCase();
+  const existing = (await store.people.toArray()).find((p) => p.name.toLowerCase() === key);
+  return existing ?? createPerson({ name, relationship: '', avatar: null, notes: '' }, store);
+}
+
+export async function updatePerson(id: string, patch: Partial<PersonDraft>, store: LifelineDB = db) {
+  const p = await store.people.get(id);
+  if (!p) throw new Error('Person not found');
+  const next: Person = { ...p, ...patch, updatedAt: Date.now() };
+  if (patch.name !== undefined) next.name = patch.name.trim();
+  if (patch.relationship !== undefined) next.relationship = patch.relationship.trim();
+  await store.people.put(next);
+  return next;
+}
+
+/** Delete a person and remove them from every memory they appear in. */
+export async function deletePerson(id: string, store: LifelineDB = db) {
+  await store.transaction('rw', store.people, store.memories, async () => {
+    await store.memories
+      .where('personIds')
+      .equals(id)
+      .modify((m) => {
+        m.personIds = m.personIds.filter((x) => x !== id);
+      });
+    await store.people.delete(id);
+  });
+}
+
+// ---------------------------------------------------------------- reflection
+
+export interface ReflectionState {
+  /** Prompt currently on screen. */
+  promptId: string | null;
+  /** Unsaved writing, per prompt, so shuffling never loses anything. */
+  drafts: Record<string, string>;
+  /** Prompts the person asked not to see again. */
+  skipped: string[];
+  /** Recently shown, so shuffling doesn't repeat itself. */
+  recent: string[];
+}
+
+const EMPTY_REFLECTION: ReflectionState = { promptId: null, drafts: {}, skipped: [], recent: [] };
+
+export async function getReflection(store: LifelineDB = db): Promise<ReflectionState> {
+  const row = await store.meta.get('reflection');
+  return { ...EMPTY_REFLECTION, ...((row?.value as Partial<ReflectionState>) ?? {}) };
+}
+
+export async function saveReflection(patch: Partial<ReflectionState>, store: LifelineDB = db) {
+  const next = { ...(await getReflection(store)), ...patch };
+  await store.meta.put({ key: 'reflection', value: next });
+  return next;
+}
+
 // ---------------------------------------------------------------- chapters
 
 export async function saveChapter(
@@ -249,7 +352,8 @@ export function suggestedChapters(birthYear: number, thisYear = new Date().getFu
 }
 
 export async function wipeEverything(store: LifelineDB = db) {
-  await store.transaction('rw', [store.memories, store.photos, store.chapters, store.meta], async () => {
-    await Promise.all([store.memories.clear(), store.photos.clear(), store.chapters.clear(), store.meta.clear()]);
+  const tables = [store.memories, store.photos, store.chapters, store.people, store.recordings, store.meta];
+  await store.transaction('rw', tables, async () => {
+    await Promise.all(tables.map((t) => t.clear()));
   });
 }

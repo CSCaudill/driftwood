@@ -1,22 +1,33 @@
 import type { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
-import { BookOpen, Inbox, Plus, Settings, Waypoints } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { BookOpen, Ellipsis, Feather, Inbox, Plus, Settings, Users, Waypoints } from 'lucide-react';
 import { useMemories } from '../hooks/data';
 import { useApp } from '../state/app';
 import { cx } from './ui';
 
-const NAV = [
+type NavItem = { to: string; label: string; icon: typeof Waypoints; end?: boolean };
+
+/** Desktop sidebar. */
+const NAV: NavItem[] = [
   { to: '/', label: 'Timeline', icon: Waypoints, end: true },
+  { to: '/reflect', label: 'Reflect', icon: Feather },
+  { to: '/people', label: 'People', icon: Users },
   { to: '/unplaced', label: 'Unplaced', icon: Inbox },
   { to: '/chapters', label: 'Chapters', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
+
+/** Phone tab bar: four tabs around the capture button; the rest live under More. */
+const TABS_LEFT: NavItem[] = [NAV[0], NAV[1]];
+const TABS_RIGHT: NavItem[] = [NAV[2], { to: '/more', label: 'More', icon: Ellipsis }];
 
 /** Sidebar on wide screens, tab bar with a capture button on phones. */
 export function AppShell({ children }: { children: ReactNode }) {
   const { openEditor, toast, dismissToast } = useApp();
   const memories = useMemories();
   const unplaced = memories?.filter((m) => m.groupYear == null).length ?? 0;
+  // Reflect has its own sticky action bar on phones; lift toasts above it.
+  const lifted = useLocation().pathname === '/reflect';
 
   return (
     <div className="min-h-dvh lg:pl-60">
@@ -64,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/92 backdrop-blur-xl lg:hidden"
       >
         <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
-          {NAV.slice(0, 2).map((n) => <Tab key={n.to} {...n} badge={n.to === '/unplaced' ? unplaced : 0} />)}
+          {TABS_LEFT.map((n) => <Tab key={n.to} {...n} badge={0} />)}
           <div className="flex justify-center">
             <button
               onClick={() => openEditor()}
@@ -74,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Plus size={24} />
             </button>
           </div>
-          {NAV.slice(2).map((n) => <Tab key={n.to} {...n} badge={0} />)}
+          {TABS_RIGHT.map((n) => <Tab key={n.to} {...n} badge={n.to === '/more' ? unplaced : 0} />)}
         </div>
       </nav>
 
@@ -83,7 +94,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           key={toast.id}
           role="status"
-          className="anim-sheet fixed inset-x-0 bottom-[calc(5.5rem+var(--safe-bottom))] z-40 flex justify-center px-4 lg:bottom-8 lg:pl-60"
+          className={cx(
+            'anim-sheet fixed inset-x-0 z-40 flex justify-center px-4 lg:bottom-8 lg:pl-60',
+            lifted ? 'bottom-[calc(9.75rem+var(--safe-bottom))]' : 'bottom-[calc(5.5rem+var(--safe-bottom))]',
+          )}
         >
           <div className="flex max-w-md items-center gap-3 rounded-2xl bg-ink py-2.5 pl-4 pr-2 text-sm text-paper shadow-sheet">
             <span className="flex-1">{toast.message}</span>
@@ -104,13 +118,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function Tab({ to, label, icon: Icon, end, badge }: (typeof NAV)[number] & { badge: number }) {
+function Tab({ to, label, icon: Icon, end, badge }: NavItem & { badge: number }) {
+  const { pathname } = useLocation();
+  const moreActive = ['/unplaced', '/chapters', '/settings'].some((p) => pathname.startsWith(p));
+  const peopleActive = pathname.startsWith('/people');
   return (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) =>
-        cx('relative flex flex-col items-center gap-0.5 py-1 text-[0.68rem] font-medium', isActive ? 'text-tide' : 'text-faint')
+        cx(
+          'relative flex flex-col items-center gap-0.5 py-1 text-[0.68rem] font-medium',
+          isActive || (to === '/more' && moreActive) || (to === '/people' && peopleActive) ? 'text-tide' : 'text-faint',
+        )
       }
     >
       <Icon size={21} />

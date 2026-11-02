@@ -5,6 +5,8 @@ import { usePhotoThumb } from '../hooks/data';
 import { formatFuzzyDateShort, resolveBounds, spanYears } from '../lib/fuzzyDate';
 import { feelingMeta } from '../lib/meta';
 import type { Memory } from '../types';
+import { AvatarStack } from './People';
+import { useResolvedPeople } from '../state/people';
 import { cx } from './ui';
 
 /**
@@ -21,6 +23,7 @@ export function MemoryEntry({
   highlight?: boolean;
 }) {
   const thumb = usePhotoThumb(memory.photoIds[0]);
+  const people = useResolvedPeople(memory.personIds);
   const [revealed, setRevealed] = useState(false);
   const feeling = feelingMeta(memory.feeling);
   const bounds = resolveBounds(memory.date, birthYear);
@@ -89,11 +92,12 @@ export function MemoryEntry({
             {memory.notes && (
               <p className="reading mt-1 line-clamp-2 text-[0.93rem] leading-relaxed text-graphite">{memory.notes}</p>
             )}
-            {(memory.location || memory.people.length > 0) && (
-              <p className="mt-1.5 flex items-center gap-1.5 text-[0.8rem] text-faint">
-                {memory.location && <MapPin size={12} className="shrink-0" />}
+            {(memory.location || people.length > 0) && (
+              <p className="mt-2 flex items-center gap-2 text-[0.8rem] text-graphite">
+                {people.length > 0 && <AvatarStack people={people} size={22} />}
+                {people.length === 0 && memory.location && <MapPin size={12} className="shrink-0 text-faint" />}
                 <span className="truncate">
-                  {[memory.location, memory.people.length ? `with ${memory.people.join(', ')}` : '']
+                  {[people.length ? `With ${people.map((p) => p.name).join(', ')}` : '', memory.location]
                     .filter(Boolean)
                     .join(', ')}
                 </span>

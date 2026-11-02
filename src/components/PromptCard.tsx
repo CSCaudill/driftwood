@@ -1,9 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
-import { useSettings } from '../hooks/data';
 import { dailyPrompt, PROMPT_THEMES } from '../lib/prompts';
-import { useApp } from '../state/app';
-import type { FuzzyDate } from '../types';
 import { Button, IconButton } from './ui';
 
 /**
@@ -12,15 +10,9 @@ import { Button, IconButton } from './ui';
  */
 export function PromptCard() {
   const [offset, setOffset] = useState(0);
-  const { openEditor } = useApp();
-  const { birthYear } = useSettings();
+  const navigate = useNavigate();
   const prompt = dailyPrompt(offset);
-
-  const start = () => {
-    let date: FuzzyDate = { precision: 'unknown' };
-    if (prompt.ages && birthYear) date = { precision: 'age', age: prompt.ages[0], ageEnd: prompt.ages[1] };
-    openEditor({ initial: { promptId: prompt.id, date }, promptText: prompt.text });
-  };
+  const start = () => navigate(`/reflect?prompt=${prompt.id}`);
 
   return (
     <aside className="mb-6 mt-2 rounded-3xl bg-tide-wash px-5 pb-4 pt-4" aria-label="Reflection prompt">
@@ -33,7 +25,7 @@ export function PromptCard() {
       <p className="reading mt-1 text-[1.08rem] leading-relaxed text-ink">{prompt.text}</p>
       <div className="mt-3">
         <Button size="sm" variant="primary" onClick={start}>
-          Write it down
+          Reflect on this
         </Button>
       </div>
     </aside>

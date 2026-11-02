@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { MemoryDraft } from '../db/repo';
+import type { Memory } from '../types';
 
 /**
  * App-wide UI state: the memory editor (opened from anywhere) and toasts with
@@ -15,6 +16,10 @@ export interface EditorRequest {
   promptText?: string;
   /** Open straight to the date picker (used by "Place it" in Unplaced). */
   focusDate?: boolean;
+  /** Sheet title override, e.g. "Save as a memory". */
+  heading?: string;
+  /** Called after a successful save. */
+  onSaved?: (memory: Memory) => void;
 }
 
 export interface Toast {

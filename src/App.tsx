@@ -4,12 +4,17 @@ import { AppShell } from './components/AppShell';
 import { MemoryEditorHost } from './components/MemoryEditor';
 import { useMediaQuery, useSettings } from './hooks/data';
 import { ChaptersScreen } from './screens/ChaptersScreen';
+import { MoreScreen } from './screens/MoreScreen';
+import { PeopleScreen } from './screens/PeopleScreen';
+import { PersonScreen } from './screens/PersonScreen';
+import { ReflectScreen } from './screens/ReflectScreen';
 import { MemoryScreen } from './screens/MemoryScreen';
 import { Onboarding } from './screens/Onboarding';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { TimelineScreen } from './screens/TimelineScreen';
 import { UnplacedScreen } from './screens/UnplacedScreen';
 import { AppProvider } from './state/app';
+import { PeopleProvider } from './state/people';
 
 function useTheme() {
   const { theme, loaded } = useSettings();
@@ -39,6 +44,7 @@ export default function App() {
 
   return (
     <AppProvider>
+      <PeopleProvider>
       <HashRouter>
         <ScrollToTop />
         {!settings.onboarded ? (
@@ -47,6 +53,10 @@ export default function App() {
           <AppShell>
             <Routes>
               <Route path="/" element={<TimelineScreen />} />
+              <Route path="/reflect" element={<ReflectScreen />} />
+              <Route path="/people" element={<PeopleScreen />} />
+              <Route path="/people/:id" element={<PersonScreen />} />
+              <Route path="/more" element={<MoreScreen />} />
               <Route path="/unplaced" element={<UnplacedScreen />} />
               <Route path="/chapters" element={<ChaptersScreen />} />
               <Route path="/settings" element={<SettingsScreen />} />
@@ -57,6 +67,7 @@ export default function App() {
           </AppShell>
         )}
       </HashRouter>
+      </PeopleProvider>
     </AppProvider>
   );
 }

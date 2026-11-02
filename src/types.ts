@@ -65,7 +65,8 @@ export interface Memory {
    */
   rank: number | null;
   location: string;
-  people: string[];
+  /** People in this memory (ids into the people table). */
+  personIds: string[];
   tags: string[];
   feeling: Feeling | null;
   clarity: Clarity;
@@ -88,6 +89,30 @@ export interface Photo {
   height: number;
   /** EXIF capture date if the photo carried one (ISO yyyy-mm-dd). */
   takenAt: string | null;
+  createdAt: number;
+}
+
+/** A person who appears in memories: family, friends, teachers… */
+export interface Person {
+  id: string;
+  name: string;
+  /** Free text, e.g. "Mom", "Grandfather", "Best friend". */
+  relationship: string;
+  /** Small square JPEG, or null to show initials. */
+  avatar: Blob | null;
+  color: ChapterColor;
+  notes: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** A spoken voice note attached to a memory. */
+export interface Recording {
+  id: string;
+  memoryId: string;
+  blob: Blob;
+  mime: string;
+  durationMs: number;
   createdAt: number;
 }
 

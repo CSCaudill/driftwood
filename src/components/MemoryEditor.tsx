@@ -5,18 +5,30 @@ import {
   createMemory,
   emptyDraft,
   prunePhotos,
+  pruneRecordings,
   savePhotos,
+  saveRecordings,
   updateMemory,
   type MemoryDraft,
 } from '../db/repo';
 import { useMemories, useSettings } from '../hooks/data';
 import { formatFuzzyDate, fuzzyFromIso } from '../lib/fuzzyDate';
+import { appendDictation, type VoiceClip } from '../lib/speech';
 import { CLARITY, FEELINGS } from '../lib/meta';
 import { useApp } from '../state/app';
 import { FuzzyDatePicker } from './FuzzyDatePicker';
+import { PeoplePicker } from './People';
 import { PhotoPicker, type EditorPhoto } from './Photos';
+import { DictateButton, VoicePlayer, VoiceRecorder } from './Voice';
 import { TokenInput } from './TokenInput';
 import { Button, Chip, FieldLabel, Segmented, Sheet, TextArea, TextInput, Toggle, cx } from './ui';
+
+interface EditorClip {
+  key: string;
+  /** Set when the recording already exists in the database. */
+  storedId?: string;
+  clip: VoiceClip;
+}
 
 export function MemoryEditorHost() {
   const { editor, closeEditor } = useApp();
@@ -33,6 +45,7 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
 
   const [draft, setDraft] = useState<MemoryDraft>(() => emptyDraft(editor?.initial));
   const [photos, setPhotos] = useState<EditorPhoto[]>([]);
+  const [clips, setClips] = useState<EditorClip[]>([]);
   const [loaded, setLoaded] = useState(!isEdit);
   const [showMore, setShowMore] = useState(false);
   const [photoDate, setPhotoDate] = useState<string | null>(null);
@@ -54,20 +67,17 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
       setDraft(rest);
       const stored = await db.photos.bulkGet(m.photoIds);
       setPhotos(stored.filter((p) => !!p).map((p) => ({ kind: 'stored', id: p!.id, thumb: p!.thumb })));
-      setShowMore(!!(m.location || m.people.length || m.tags.length || m.isPrivate));
+      const recs = await db.recordings.where('memoryId').equals(m.id).sortBy('createdAt');
+      setClips(recs.map((r) => ({ key: r.id, storedId: r.id, clip: { blob: r.blob, mime: r.mime, durationMs: r.durationMs } })));
+      setShowMore(!!(m.location || m.tags.length || m.isPrivate));
       setLoaded(true);
     })();
   }, [editor?.memoryId, onClose]);
 
-  const suggestions = useMemo(() => {
-    const people = new Map<string, number>();
+  const tagSuggestions = useMemo(() => {
     const tags = new Map<string, number>();
-    for (const m of all ?? []) {
-      m.people.forEach((p) => people.set(p, (people.get(p) ?? 0) + 1));
-      m.tags.forEach((t) => tags.set(t, (tags.get(t) ?? 0) + 1));
-    }
-    const top = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1]).map(([k]) => k);
-    return { people: top(people), tags: top(tags) };
+    for (const m of all ?? []) m.tags.forEach((t) => tags.set(t, (tags.get(t) ?? 0) + 1));
+    return [...tags].sort((a, b) => b[1] - a[1]).map(([k]) => k);
   }, [all]);
 
   const set = <K extends keyof MemoryDraft>(k: K, v: MemoryDraft[K]) => setDraft((d) => ({ ...d, [k]: v }));
@@ -97,7 +107,12 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
       let n = 0;
       const photoIds = photos.map((p) => (p.kind === 'stored' ? p.id : newIds[n++]));
       await prunePhotos(id, photoIds);
+
+      // Drop recordings removed in the editor, then add the new ones.
+      await pruneRecordings(id, clips.filter((c) => c.storedId).map((c) => c.storedId!));
+      await saveRecordings(id, clips.filter((c) => !c.storedId).map((c) => c.clip));
       const saved = await updateMemory(id, { ...draft, photoIds });
+      editor?.onSaved?.(saved);
 
       setLastTouched(id);
       showToast(
@@ -115,13 +130,14 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
   };
 
   const titlePlaceholder = editor?.promptText ? 'Give it a short title' : 'What do you remember?';
+  const addClip = (clip: VoiceClip) => setClips((c) => [...c, { key: crypto.randomUUID?.() ?? String(Math.random()), clip }]);
 
   return (
     <Sheet
       open
       onClose={onClose}
       size="lg"
-      title={isEdit ? 'Edit memory' : 'New memory'}
+      title={editor?.heading ?? (isEdit ? 'Edit memory' : 'New memory')}
       footer={
         <div className="flex items-center justify-end gap-2">
           <Button variant="quiet" onClick={onClose}>Cancel</Button>
@@ -164,6 +180,9 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
               rows={5}
               className="reading mt-3 text-[1.02rem]"
             />
+            <div className="mt-2">
+              <DictateButton label="Speak instead" onText={(t) => setDraft((d) => ({ ...d, notes: appendDictation(d.notes, t) }))} />
+            </div>
           </div>
 
           <section ref={dateSection}>
@@ -182,8 +201,30 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
           </section>
 
           <section>
+            <FieldLabel hint="Family, friends, anyone who was part of it">Who was there?</FieldLabel>
+            <PeoplePicker value={draft.personIds} onChange={(ids) => set('personIds', ids)} />
+          </section>
+
+          <section>
             <FieldLabel>Photos</FieldLabel>
             <PhotoPicker photos={photos} onChange={setPhotos} onDateFound={onPhotoDate} />
+          </section>
+
+          <section>
+            <FieldLabel hint="Tell it out loud, in your own voice">Voice notes</FieldLabel>
+            {clips.length > 0 && (
+              <div className="mb-2 space-y-2">
+                {clips.map((c) => (
+                  <VoicePlayer
+                    key={c.key}
+                    blob={c.clip.blob}
+                    durationMs={c.clip.durationMs}
+                    onRemove={() => setClips((all) => all.filter((x) => x !== c))}
+                  />
+                ))}
+              </div>
+            )}
+            <VoiceRecorder onRecorded={addClip} />
           </section>
 
           <section>
@@ -216,7 +257,7 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
               className="flex w-full items-center justify-between px-4 py-3.5 text-left"
             >
               <span>
-                <span className="block text-[0.95rem] font-semibold">Place, people and tags</span>
+                <span className="block text-[0.95rem] font-semibold">Place, tags and privacy</span>
                 <span className="text-sm text-graphite">Helps you find and connect memories later</span>
               </span>
               <ChevronDown size={18} className={cx('text-graphite transition-transform', showMore && 'rotate-180')} />
@@ -228,12 +269,8 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
                   <TextInput id="m-place" value={draft.location} onChange={(e) => set('location', e.target.value)} placeholder="Grandma’s house, Lake Travis, Room 12…" />
                 </div>
                 <div>
-                  <FieldLabel htmlFor="m-people">People</FieldLabel>
-                  <TokenInput id="m-people" value={draft.people} onChange={(v) => set('people', v)} placeholder="Type a name and press Enter" suggestions={suggestions.people} />
-                </div>
-                <div>
                   <FieldLabel htmlFor="m-tags">Tags</FieldLabel>
-                  <TokenInput id="m-tags" value={draft.tags} onChange={(v) => set('tags', v)} placeholder="school, summer, music…" suggestions={suggestions.tags} />
+                  <TokenInput id="m-tags" value={draft.tags} onChange={(v) => set('tags', v)} placeholder="school, summer, music…" suggestions={tagSuggestions} />
                 </div>
                 <Toggle
                   checked={draft.isPrivate}

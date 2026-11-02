@@ -20,13 +20,13 @@ export function Onboarding() {
   return (
     <main className="safe-top safe-bottom flex min-h-dvh items-center justify-center px-6 py-10">
       <div className="w-full max-w-md">
-        <Spine />
+        <img src="./icon.svg" alt="Driftwood" className="h-16 w-16 rounded-[18px] shadow-raise" />
         <h1 className="display mt-8 text-[2.4rem] font-semibold leading-[1.05]">
-          Gather the moments that made you.
+          Collect the pieces as they wash up.
         </h1>
         <p className="reading mt-4 text-[1.05rem] text-graphite">
-          Write down memories as they come back, even the faint ones. Lifeline places them in order, so a picture of your
-          life slowly fills in.
+          Memories come back a piece at a time, often without a date. Write each one down, even the faint ones. Driftwood
+          keeps them in order, so a picture of your life slowly takes shape.
         </p>
 
         <div className="mt-8 space-y-5">
@@ -67,16 +67,5 @@ export function Onboarding() {
         <p className="mt-6 text-center text-xs text-faint">Your memories stay on this device.</p>
       </div>
     </main>
-  );
-}
-
-function Spine() {
-  return (
-    <svg width="44" height="96" viewBox="0 0 44 96" aria-hidden>
-      <line x1="22" y1="4" x2="22" y2="92" stroke="var(--line)" strokeWidth="2" />
-      <circle cx="22" cy="18" r="6" fill="var(--mist)" stroke="var(--faint-ink)" strokeWidth="1.5" strokeDasharray="2.5 2.5" />
-      <circle cx="22" cy="46" r="8" fill="var(--tide)" />
-      <circle cx="22" cy="74" r="6" fill="var(--mist)" stroke="var(--tide)" strokeWidth="2" />
-    </svg>
   );
 }

@@ -1,8 +1,8 @@
-# Lifeline
+# Driftwood
 
-Capture memories as they surface and place them on a timeline of your life.
+Memories wash up a piece at a time. Collect each one, and place it on the timeline of your life.
 
-Lifeline is for people who want to rebuild a picture of their past, including people who don't remember much of it. Memories often come back as fragments with no date. The app lets you write them down in seconds, file them as precisely or loosely as you actually know, and rearrange them as more comes back.
+Driftwood is for people who want to rebuild a picture of their past, including people who don't remember much of it. Memories often come back as fragments with no date. The app lets you write them down in seconds, file them as precisely or loosely as you actually know, and rearrange them as more comes back.
 
 One codebase runs **on the web** and **on iOS** (wrapped with Capacitor).
 
@@ -80,21 +80,27 @@ npm run ios:open         # opens Xcode, then press Run
 
 Before you ship:
 
-1. Change `appId` in `capacitor.config.ts` to your own bundle id (e.g. `com.yourname.lifeline`).
+1. Change `appId` in `capacitor.config.ts` to your own bundle id (e.g. `com.yourname.driftwood`).
 2. In Xcode, set your team under *Signing & Capabilities*.
 3. Add these usage strings to `ios/App/App/Info.plist`. iOS shows them when it asks for permission, and the app crashes without them:
 
    ```xml
    <key>NSPhotoLibraryUsageDescription</key>
-   <string>Lifeline lets you add photos to your memories.</string>
+   <string>Driftwood lets you add photos to your memories.</string>
    <key>NSCameraUsageDescription</key>
-   <string>Lifeline lets you take a photo for a memory.</string>
+   <string>Driftwood lets you take a photo for a memory.</string>
    <key>NSMicrophoneUsageDescription</key>
-   <string>Lifeline uses the microphone for dictation and voice notes.</string>
+   <string>Driftwood uses the microphone for dictation and voice notes.</string>
    <key>NSSpeechRecognitionUsageDescription</key>
-   <string>Lifeline turns what you say into text so you can write memories by speaking.</string>
+   <string>Driftwood turns what you say into text so you can write memories by speaking.</string>
    ```
-4. Replace `public/icon.svg` with a 1024×1024 PNG app icon in the asset catalog.
+4. Generate the iOS app icons from `assets/icon-only.png` (1024×1024, already included):
+
+   ```bash
+   npx @capacitor/assets generate --ios
+   ```
+
+   The web app uses `public/icon.svg`, the same mark with rounded corners.
 
 ## Project structure
 
@@ -135,7 +141,7 @@ The database is versioned with Dexie. Version 2 turned the plain name tags from 
 
 **Near term**
 - **Transcribe voice notes.** Turn a recorded note into text after the fact, on the device with Apple's Speech framework or with Whisper.
-- **Hands-free capture.** An iOS Shortcut or Siri intent ("Hey Siri, add a memory to Lifeline") that opens straight into dictation.
+- **Hands-free capture.** An iOS Shortcut or Siri intent ("Hey Siri, add a memory to Driftwood") that opens straight into dictation.
 - **Face ID lock** (`capacitor-native-biometric`) and an encrypted database option for an app that may hold sensitive material.
 - **"On this day" and gentle reminders.** Optional local notifications with a prompt, at a time you choose.
 - **Photo-first capture.** Pick a batch of old photos and get one draft memory per photo, pre-dated from EXIF.

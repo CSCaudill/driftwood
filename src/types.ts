@@ -1,5 +1,5 @@
 /**
- * Core domain types for Lifeline.
+ * Core domain types for Driftwood.
  *
  * Memories rarely come with exact dates, so the date model is "fuzzy": a
  * memory can be pinned to a day, a month, a season, a year, an age, a range of

@@ -127,7 +127,7 @@ export function SettingsScreen() {
         </div>
       </Group>
 
-      <p className="mt-8 text-center text-xs text-faint">Lifeline 0.1.0</p>
+      <p className="mt-8 text-center text-xs text-faint">Driftwood 0.1.0</p>
 
       <Sheet
         open={!!pending}

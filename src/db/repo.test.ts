@@ -1,13 +1,13 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LifelineDB } from './db';
+import { DriftwoodDB } from './db';
 import Dexie from 'dexie';
 import { createMemory, createPerson, deletePerson, emptyDraft, moveMemory, updateMemory, updateSettings } from './repo';
 import { orderSection } from '../lib/ordering';
 
-let store: LifelineDB;
+let store: DriftwoodDB;
 beforeEach(async () => {
-  store = new LifelineDB('test-' + Math.random());
+  store = new DriftwoodDB('test-' + Math.random());
   await store.open();
 });
 
@@ -73,7 +73,7 @@ describe('people', () => {
     ]);
     v1.close();
 
-    const v2 = new LifelineDB(name);
+    const v2 = new DriftwoodDB(name);
     await v2.open();
     const people = await v2.people.toArray();
     expect(people.map((p) => p.name).sort()).toEqual(['Danny', 'Mom']);

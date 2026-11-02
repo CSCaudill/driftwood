@@ -1,4 +1,4 @@
-import { db, type LifelineDB } from '../db/db';
+import { db, type DriftwoodDB } from '../db/db';
 import { getSettings } from '../db/repo';
 import { newId } from './id';
 import type { Chapter, Memory, Person, Photo, Recording, Settings } from '../types';
@@ -9,7 +9,9 @@ import type { Chapter, Memory, Person, Photo, Recording, Settings } from '../typ
  * migration path to any future sync service.
  */
 
-export const BACKUP_FORMAT = 'lifeline-backup';
+export const BACKUP_FORMAT = 'driftwood-backup';
+/** Files exported before the app was renamed. */
+const LEGACY_FORMATS = ['lifeline-backup'];
 export const BACKUP_VERSION = 2;
 
 interface SerializedPerson extends Omit<Person, 'avatar'> {
@@ -28,7 +30,7 @@ interface SerializedPhoto extends Omit<Photo, 'blob' | 'thumb'> {
 }
 
 export interface BackupFile {
-  format: typeof BACKUP_FORMAT;
+  format: string;
   version: number;
   exportedAt: string;
   settings: Settings;
@@ -58,7 +60,7 @@ function base64ToBlob(b64: string, mime: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
-export async function createBackup(store: LifelineDB = db): Promise<BackupFile> {
+export async function createBackup(store: DriftwoodDB = db): Promise<BackupFile> {
   const [settings, memories, chapters, photos, people, recordings] = await Promise.all([
     getSettings(store),
     store.memories.toArray(),
@@ -103,7 +105,7 @@ export async function createBackup(store: LifelineDB = db): Promise<BackupFile> 
 export async function downloadBackup() {
   const backup = await createBackup();
   const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
-  const filename = `lifeline-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  const filename = `driftwood-backup-${backup.exportedAt.slice(0, 10)}.json`;
 
   // On iOS (Safari and the Capacitor shell) the share sheet is the natural way
   // to save to Files / iCloud Drive; <a download> is unreliable there.
@@ -111,7 +113,7 @@ export async function downloadBackup() {
   const isTouch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   if (isTouch && navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: 'Lifeline backup' });
+      await navigator.share({ files: [file], title: 'Driftwood backup' });
       return backup.memories.length;
     } catch (e) {
       if ((e as Error).name === 'AbortError') return 0;
@@ -134,14 +136,15 @@ export function parseBackup(text: string): BackupFile {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error('That file isn’t a Lifeline backup.');
+    throw new Error('That file isn’t a Driftwood backup.');
   }
   const b = data as Partial<BackupFile>;
-  if (b.format !== BACKUP_FORMAT || !Array.isArray(b.memories)) {
-    throw new Error('That file isn’t a Lifeline backup.');
+  const knownFormat = b.format === BACKUP_FORMAT || LEGACY_FORMATS.includes(b.format ?? '');
+  if (!knownFormat || !Array.isArray(b.memories)) {
+    throw new Error('That file isn’t a Driftwood backup.');
   }
   if ((b.version ?? 0) > BACKUP_VERSION) {
-    throw new Error('This backup was made by a newer version of Lifeline.');
+    throw new Error('This backup was made by a newer version of Driftwood.');
   }
   return upgradeBackup(b as BackupFile);
 }
@@ -172,7 +175,7 @@ function upgradeBackup(b: BackupFile): BackupFile {
  * Restore a backup. `merge` keeps existing data and adds/overwrites by id;
  * `replace` wipes the device first.
  */
-export async function restoreBackup(backup: BackupFile, mode: 'merge' | 'replace', store: LifelineDB = db) {
+export async function restoreBackup(backup: BackupFile, mode: 'merge' | 'replace', store: DriftwoodDB = db) {
   const tables = [store.memories, store.photos, store.chapters, store.people, store.recordings, store.meta];
   await store.transaction('rw', tables, async () => {
     if (mode === 'replace') {

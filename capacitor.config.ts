@@ -2,12 +2,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   // Change this to your own reverse-DNS bundle id before shipping to the App Store.
-  appId: 'com.yourcompany.lifeline',
-  appName: 'Lifeline',
+  appId: 'com.yourcompany.driftwood',
+  appName: 'Driftwood',
   webDir: 'dist',
   ios: {
     contentInset: 'never',
-    backgroundColor: '#FAF8F5',
+    backgroundColor: '#F2F3EF',
   },
 };
 

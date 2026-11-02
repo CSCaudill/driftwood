@@ -1,10 +1,17 @@
 {
-  "name": "Lifeline",
-  "short_name": "Lifeline",
-  "description": "Capture memories as they surface and place them on the timeline of your life.",
+  "name": "Driftwood",
+  "short_name": "Driftwood",
+  "description": "Collect memories as they come back and place them on the timeline of your life.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#FAF8F5",
-  "theme_color": "#FAF8F5",
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "background_color": "#F2F3EF",
+  "theme_color": "#F2F3EF",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

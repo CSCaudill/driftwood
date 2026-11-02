@@ -132,7 +132,7 @@ async function startNative(h: DictationHandlers): Promise<DictationSession> {
   let perm = await SpeechRecognition.checkPermissions();
   if (perm.speechRecognition !== 'granted') perm = await SpeechRecognition.requestPermissions();
   if (perm.speechRecognition !== 'granted') {
-    throw new Error('Allow Speech Recognition and Microphone for Lifeline in the Settings app to dictate.');
+    throw new Error('Allow Speech Recognition and Microphone for Driftwood in the Settings app to dictate.');
   }
 
   // iOS reports the whole utterance so far on every partial result; commit it

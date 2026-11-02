@@ -1,4 +1,4 @@
-import { db, type LifelineDB } from './db';
+import { db, type DriftwoodDB } from './db';
 import { newId } from '../lib/id';
 import { resolveBounds, shiftToYear } from '../lib/fuzzyDate';
 import { orderSection, rankForMove } from '../lib/ordering';
@@ -51,12 +51,12 @@ export function deriveFields(date: FuzzyDate, birthYear: number | null) {
 
 // ---------------------------------------------------------------- settings
 
-export async function getSettings(store: LifelineDB = db): Promise<Settings> {
+export async function getSettings(store: DriftwoodDB = db): Promise<Settings> {
   const row = await store.meta.get('settings');
   return { ...DEFAULT_SETTINGS, ...((row?.value as Partial<Settings>) ?? {}) };
 }
 
-export async function updateSettings(patch: Partial<Settings>, store: LifelineDB = db): Promise<Settings> {
+export async function updateSettings(patch: Partial<Settings>, store: DriftwoodDB = db): Promise<Settings> {
   const current = await getSettings(store);
   const next = { ...current, ...patch };
   await store.meta.put({ key: 'settings', value: next });
@@ -67,7 +67,7 @@ export async function updateSettings(patch: Partial<Settings>, store: LifelineDB
   return next;
 }
 
-async function recomputeDerived(birthYear: number | null, store: LifelineDB) {
+async function recomputeDerived(birthYear: number | null, store: DriftwoodDB) {
   const all = await store.memories.toArray();
   const changed: Memory[] = [];
   for (const m of all) {
@@ -81,7 +81,7 @@ async function recomputeDerived(birthYear: number | null, store: LifelineDB) {
 
 // ---------------------------------------------------------------- memories
 
-export async function createMemory(draft: MemoryDraft, store: LifelineDB = db): Promise<Memory> {
+export async function createMemory(draft: MemoryDraft, store: DriftwoodDB = db): Promise<Memory> {
   const { birthYear } = await getSettings(store);
   const now = Date.now();
   const memory: Memory = {
@@ -97,7 +97,7 @@ export async function createMemory(draft: MemoryDraft, store: LifelineDB = db): 
   return memory;
 }
 
-export async function updateMemory(id: string, patch: Partial<MemoryDraft>, store: LifelineDB = db) {
+export async function updateMemory(id: string, patch: Partial<MemoryDraft>, store: DriftwoodDB = db) {
   const existing = await store.memories.get(id);
   if (!existing) throw new Error('Memory not found');
   const next: Memory = { ...existing, ...patch, updatedAt: Date.now() };
@@ -112,7 +112,7 @@ export async function updateMemory(id: string, patch: Partial<MemoryDraft>, stor
   return next;
 }
 
-export async function deleteMemory(id: string, store: LifelineDB = db) {
+export async function deleteMemory(id: string, store: DriftwoodDB = db) {
   await store.transaction('rw', store.memories, store.photos, store.recordings, async () => {
     await store.photos.where('memoryId').equals(id).delete();
     await store.recordings.where('memoryId').equals(id).delete();
@@ -120,7 +120,7 @@ export async function deleteMemory(id: string, store: LifelineDB = db) {
   });
 }
 
-export async function toggleFavorite(id: string, store: LifelineDB = db) {
+export async function toggleFavorite(id: string, store: DriftwoodDB = db) {
   const m = await store.memories.get(id);
   if (m) await store.memories.update(id, { favorite: !m.favorite, updatedAt: Date.now() });
 }
@@ -134,7 +134,7 @@ export async function moveMemory(
   id: string,
   targetYear: number,
   targetIndex: number,
-  store: LifelineDB = db,
+  store: DriftwoodDB = db,
 ): Promise<{ undo: Memory[]; moved: Memory } | null> {
   return store.transaction('rw', store.memories, store.meta, async () => {
     const { birthYear } = await getSettings(store);
@@ -171,12 +171,12 @@ export async function moveMemory(
   });
 }
 
-export async function restoreMemories(snapshots: Memory[], store: LifelineDB = db) {
+export async function restoreMemories(snapshots: Memory[], store: DriftwoodDB = db) {
   await store.memories.bulkPut(snapshots);
 }
 
 /** Clear manual ordering for one year (back to chronological). */
-export async function resetSectionOrder(year: number, store: LifelineDB = db) {
+export async function resetSectionOrder(year: number, store: DriftwoodDB = db) {
   const items = await store.memories.where('groupYear').equals(year).toArray();
   await store.memories.bulkPut(items.map((m) => ({ ...m, rank: null })));
 }
@@ -186,19 +186,19 @@ export async function resetSectionOrder(year: number, store: LifelineDB = db) {
 export async function savePhotos(
   memoryId: string,
   photos: Omit<Photo, 'id' | 'memoryId' | 'createdAt'>[],
-  store: LifelineDB = db,
+  store: DriftwoodDB = db,
 ): Promise<string[]> {
   const rows: Photo[] = photos.map((p) => ({ ...p, id: newId(), memoryId, createdAt: Date.now() }));
   await store.photos.bulkAdd(rows);
   return rows.map((r) => r.id);
 }
 
-export async function deletePhotos(ids: string[], store: LifelineDB = db) {
+export async function deletePhotos(ids: string[], store: DriftwoodDB = db) {
   await store.photos.bulkDelete(ids);
 }
 
 /** Remove photos attached to a memory that are no longer referenced by it. */
-export async function prunePhotos(memoryId: string, keep: string[], store: LifelineDB = db) {
+export async function prunePhotos(memoryId: string, keep: string[], store: DriftwoodDB = db) {
   const keepSet = new Set(keep);
   const ids = (await store.photos.where('memoryId').equals(memoryId).primaryKeys()).filter(
     (id) => !keepSet.has(id as string),
@@ -211,7 +211,7 @@ export async function prunePhotos(memoryId: string, keep: string[], store: Lifel
 export async function saveRecordings(
   memoryId: string,
   recordings: Omit<Recording, 'id' | 'memoryId' | 'createdAt'>[],
-  store: LifelineDB = db,
+  store: DriftwoodDB = db,
 ): Promise<string[]> {
   const rows: Recording[] = recordings.map((r) => ({ ...r, id: newId(), memoryId, createdAt: Date.now() }));
   if (rows.length) await store.recordings.bulkAdd(rows);
@@ -219,7 +219,7 @@ export async function saveRecordings(
 }
 
 /** Remove recordings attached to a memory that the user deleted in the editor. */
-export async function pruneRecordings(memoryId: string, keep: string[], store: LifelineDB = db) {
+export async function pruneRecordings(memoryId: string, keep: string[], store: DriftwoodDB = db) {
   const keepSet = new Set(keep);
   const ids = (await store.recordings.where('memoryId').equals(memoryId).primaryKeys()).filter(
     (id) => !keepSet.has(id as string),
@@ -233,7 +233,7 @@ const PERSON_COLORS: ChapterColor[] = ['sage', 'sky', 'clay', 'plum', 'sand', 'r
 
 export type PersonDraft = Pick<Person, 'name' | 'relationship' | 'avatar' | 'notes'> & { color?: ChapterColor };
 
-export async function createPerson(draft: PersonDraft, store: LifelineDB = db): Promise<Person> {
+export async function createPerson(draft: PersonDraft, store: DriftwoodDB = db): Promise<Person> {
   const count = await store.people.count();
   const now = Date.now();
   const person: Person = {
@@ -250,13 +250,13 @@ export async function createPerson(draft: PersonDraft, store: LifelineDB = db): 
 }
 
 /** Find a person by (case-insensitive) name, creating them if needed. */
-export async function findOrCreatePerson(name: string, store: LifelineDB = db): Promise<Person> {
+export async function findOrCreatePerson(name: string, store: DriftwoodDB = db): Promise<Person> {
   const key = name.trim().toLowerCase();
   const existing = (await store.people.toArray()).find((p) => p.name.toLowerCase() === key);
   return existing ?? createPerson({ name, relationship: '', avatar: null, notes: '' }, store);
 }
 
-export async function updatePerson(id: string, patch: Partial<PersonDraft>, store: LifelineDB = db) {
+export async function updatePerson(id: string, patch: Partial<PersonDraft>, store: DriftwoodDB = db) {
   const p = await store.people.get(id);
   if (!p) throw new Error('Person not found');
   const next: Person = { ...p, ...patch, updatedAt: Date.now() };
@@ -267,7 +267,7 @@ export async function updatePerson(id: string, patch: Partial<PersonDraft>, stor
 }
 
 /** Delete a person and remove them from every memory they appear in. */
-export async function deletePerson(id: string, store: LifelineDB = db) {
+export async function deletePerson(id: string, store: DriftwoodDB = db) {
   await store.transaction('rw', store.people, store.memories, async () => {
     await store.memories
       .where('personIds')
@@ -294,12 +294,12 @@ export interface ReflectionState {
 
 const EMPTY_REFLECTION: ReflectionState = { promptId: null, drafts: {}, skipped: [], recent: [] };
 
-export async function getReflection(store: LifelineDB = db): Promise<ReflectionState> {
+export async function getReflection(store: DriftwoodDB = db): Promise<ReflectionState> {
   const row = await store.meta.get('reflection');
   return { ...EMPTY_REFLECTION, ...((row?.value as Partial<ReflectionState>) ?? {}) };
 }
 
-export async function saveReflection(patch: Partial<ReflectionState>, store: LifelineDB = db) {
+export async function saveReflection(patch: Partial<ReflectionState>, store: DriftwoodDB = db) {
   const next = { ...(await getReflection(store)), ...patch };
   await store.meta.put({ key: 'reflection', value: next });
   return next;
@@ -309,7 +309,7 @@ export async function saveReflection(patch: Partial<ReflectionState>, store: Lif
 
 export async function saveChapter(
   chapter: Omit<Chapter, 'id' | 'createdAt'> & { id?: string },
-  store: LifelineDB = db,
+  store: DriftwoodDB = db,
 ): Promise<Chapter> {
   const existing = chapter.id ? await store.chapters.get(chapter.id) : undefined;
   const [startYear, endYear] =
@@ -328,7 +328,7 @@ export async function saveChapter(
   return row;
 }
 
-export async function deleteChapter(id: string, store: LifelineDB = db) {
+export async function deleteChapter(id: string, store: DriftwoodDB = db) {
   await store.chapters.delete(id);
 }
 
@@ -351,7 +351,7 @@ export function suggestedChapters(birthYear: number, thisYear = new Date().getFu
     .filter((c) => c.startYear <= thisYear);
 }
 
-export async function wipeEverything(store: LifelineDB = db) {
+export async function wipeEverything(store: DriftwoodDB = db) {
   const tables = [store.memories, store.photos, store.chapters, store.people, store.recordings, store.meta];
   await store.transaction('rw', tables, async () => {
     await Promise.all(tables.map((t) => t.clear()));

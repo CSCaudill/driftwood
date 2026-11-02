@@ -1,9 +1,9 @@
 {
-  "name": "lifeline-memories",
+  "name": "driftwood",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Lifeline: capture memories as they surface and place them on a timeline of your life. Runs on the web and on iOS (via Capacitor).",
+  "description": "Driftwood: collect memories as they come back and place them on a timeline of your life. Runs on the web and on iOS (via Capacitor).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

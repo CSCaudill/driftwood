@@ -14,7 +14,7 @@ const COLORS: ChapterColor[] = ['sage', 'sky', 'clay', 'plum', 'sand', 'rose'];
  * in the iOS WKWebView shell. Everything stays on the device unless the user
  * exports a backup.
  */
-export class LifelineDB extends Dexie {
+export class DriftwoodDB extends Dexie {
   memories!: EntityTable<Memory, 'id'>;
   photos!: EntityTable<Photo, 'id'>;
   chapters!: EntityTable<Chapter, 'id'>;
@@ -22,7 +22,7 @@ export class LifelineDB extends Dexie {
   recordings!: EntityTable<Recording, 'id'>;
   meta!: EntityTable<MetaRow, 'key'>;
 
-  constructor(name = 'lifeline') {
+  constructor(name = 'driftwood') {
     super(name);
     this.version(1).stores({
       memories: 'id, groupYear, sortStart, updatedAt, createdAt, favorite, *tags, *people',
@@ -74,6 +74,6 @@ export class LifelineDB extends Dexie {
   }
 }
 
-export const db = new LifelineDB();
+export const db = new DriftwoodDB();
 
 export type { MetaRow, Settings };

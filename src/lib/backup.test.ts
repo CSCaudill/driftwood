@@ -1,18 +1,18 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
-import { LifelineDB } from '../db/db';
+import { DriftwoodDB } from '../db/db';
 import { createMemory, createPerson, emptyDraft } from '../db/repo';
 import { createBackup, parseBackup, restoreBackup } from './backup';
 
 describe('backup', () => {
   it('round-trips people, recordings and memories', async () => {
-    const src = new LifelineDB('bk-src-' + Math.random());
+    const src = new DriftwoodDB('bk-src-' + Math.random());
     const mom = await createPerson({ name: 'Mom', relationship: 'Mom', avatar: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }), notes: '' }, src);
     const m = await createMemory(emptyDraft({ title: 'kitchen', personIds: [mom.id] }), src);
     await src.recordings.add({ id: 'r1', memoryId: m.id, blob: new Blob([new Uint8Array([9, 9])], { type: 'audio/mp4' }), mime: 'audio/mp4', durationMs: 1200, createdAt: 1 });
 
     const file = parseBackup(JSON.stringify(await createBackup(src)));
-    const dst = new LifelineDB('bk-dst-' + Math.random());
+    const dst = new DriftwoodDB('bk-dst-' + Math.random());
     await restoreBackup(file, 'replace', dst);
     expect((await dst.people.get(mom.id))!.avatar!.size).toBe(3);
     expect((await dst.recordings.get('r1'))!.blob.size).toBe(2);
@@ -20,7 +20,7 @@ describe('backup', () => {
   });
 
   it('upgrades v1 backups with plain names and merges people by name', async () => {
-    const dst = new LifelineDB('bk-v1-' + Math.random());
+    const dst = new DriftwoodDB('bk-v1-' + Math.random());
     const existing = await createPerson({ name: 'Dad', relationship: 'Dad', avatar: null, notes: '' }, dst);
     const v1 = {
       format: 'lifeline-backup', version: 1, exportedAt: '2026-01-01T00:00:00Z',

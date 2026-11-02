@@ -1,0 +1,10 @@
+{
+  "name": "Lifeline",
+  "short_name": "Lifeline",
+  "description": "Capture memories as they surface and place them on the timeline of your life.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FAF8F5",
+  "theme_color": "#FAF8F5",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

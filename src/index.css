@@ -1,0 +1,267 @@
+@import '@fontsource-variable/bricolage-grotesque/standard.css';
+@import '@fontsource-variable/literata/opsz.css';
+@import '@fontsource-variable/literata/opsz-italic.css';
+@import 'tailwindcss';
+
+/*
+ * Lifeline design tokens — "blue hour".
+ * Cool lichen-grey ground, deep ink, a tide-teal for action and a single
+ * lantern amber reserved for highlights (favorites, the present).
+ */
+:root {
+  --mist: #f2f3ef;
+  --paper: #ffffff;
+  --sunken: #e8eae4;
+  --ink: #1e2629;
+  --graphite: #5e686b;
+  --faint-ink: #8c9497;
+  --line: #dadfd8;
+  --tide: #2f5d62;
+  --tide-strong: #234a4e;
+  --tide-wash: #dfe9e7;
+  --lantern: #e9a23b;
+  --lantern-wash: #fbefd9;
+  --danger: #b4483a;
+  --danger-wash: #f6e3df;
+  --overlay: rgb(23 30 32 / 0.42);
+  --shadow-raise: 0 1px 2px rgb(30 38 41 / 0.06), 0 8px 24px -12px rgb(30 38 41 / 0.18);
+  --shadow-sheet: 0 -12px 40px -16px rgb(30 38 41 / 0.28);
+
+  --ch-sage: #8fae9a;
+  --ch-clay: #c99a7e;
+  --ch-sky: #8fb1c9;
+  --ch-plum: #a993b8;
+  --ch-sand: #cdb98c;
+  --ch-rose: #c9939d;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --mist: #121618;
+  --paper: #1a2023;
+  --sunken: #0e1213;
+  --ink: #e9ece8;
+  --graphite: #a3acae;
+  --faint-ink: #6e787b;
+  --line: #2a3235;
+  --tide: #86b9ba;
+  --tide-strong: #a5cfcf;
+  --tide-wash: #1f3335;
+  --lantern: #f0b455;
+  --lantern-wash: #3a2e1b;
+  --danger: #e58a7c;
+  --danger-wash: #3a2220;
+  --overlay: rgb(0 0 0 / 0.6);
+  --shadow-raise: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -14px rgb(0 0 0 / 0.6);
+  --shadow-sheet: 0 -12px 40px -16px rgb(0 0 0 / 0.6);
+
+  --ch-sage: #6f9280;
+  --ch-clay: #a87d63;
+  --ch-sky: #6e93ad;
+  --ch-plum: #8a75a0;
+  --ch-sand: #a8966b;
+  --ch-rose: #a8747f;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-mist: var(--mist);
+  --color-paper: var(--paper);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-faint: var(--faint-ink);
+  --color-line: var(--line);
+  --color-tide: var(--tide);
+  --color-tide-strong: var(--tide-strong);
+  --color-tide-wash: var(--tide-wash);
+  --color-lantern: var(--lantern);
+  --color-lantern-wash: var(--lantern-wash);
+  --color-danger: var(--danger);
+  --color-danger-wash: var(--danger-wash);
+
+  --font-sans: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-read: 'Literata Variable', ui-serif, Georgia, serif;
+
+  /* Type scale (ratio ~1.25, set in rem). */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.3rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.1rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.5rem;
+
+  --shadow-raise: var(--shadow-raise);
+  --shadow-sheet: var(--shadow-sheet);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: var(--mist);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--tide-wash);
+  }
+  :focus-visible {
+    outline: 2px solid var(--tide);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button {
+    cursor: pointer;
+  }
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  /* iOS zooms inputs under 16px — keep form text at 16px on touch devices. */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+}
+
+@layer components {
+  /* Year numerals are the structural voice of the timeline. */
+  .year-numeral {
+    font-family: var(--font-sans);
+    font-variation-settings: 'wdth' 78, 'opsz' 96;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+  }
+  .display {
+    font-variation-settings: 'wdth' 85, 'opsz' 64;
+    letter-spacing: -0.015em;
+  }
+  .reading {
+    font-family: var(--font-read);
+    font-optical-sizing: auto;
+    line-height: 1.7;
+  }
+
+  /*
+   * Clarity rendering — the signature of the app. Memories are drawn with the
+   * clarity the person assigned them.
+   */
+  .clarity-vivid {
+    opacity: 1;
+  }
+  .clarity-partial {
+    opacity: 0.86;
+  }
+  .clarity-partial .clarity-media {
+    filter: saturate(0.75);
+  }
+  .clarity-faint {
+    opacity: 0.66;
+  }
+  .clarity-faint .clarity-media {
+    filter: blur(1.5px) saturate(0.4);
+  }
+  .clarity-faint .clarity-title {
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  .spine-dot {
+    border-radius: 9999px;
+    background: var(--tide);
+    box-shadow: 0 0 0 4px var(--mist);
+  }
+  .spine-dot.faint {
+    background: var(--mist);
+    border: 1.5px dashed var(--faint-ink);
+  }
+  .spine-dot.partial {
+    background: var(--mist);
+    border: 2px solid var(--tide);
+  }
+
+  .safe-top {
+    padding-top: var(--safe-top);
+  }
+  .safe-bottom {
+    padding-bottom: var(--safe-bottom);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes settle {
+  0% {
+    background-color: var(--lantern-wash);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.anim-sheet {
+  animation: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.anim-fade {
+  animation: fade-in 180ms ease-out;
+}
+/* Played once on a memory that was just saved or moved, so you can see where it landed. */
+.anim-settle {
+  animation: settle 1600ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,12 @@
+node_modules
+dist
+*.local
+.DS_Store
+coverage
+# iOS build products (the ios/ project itself should be committed after `npm run ios:add`)
+ios/App/Pods
+ios/App/build
+ios/App/App/public
+ios/DerivedData
+screenshots/tmp
+*.tsbuildinfo

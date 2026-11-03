@@ -49,7 +49,7 @@ One codebase runs **on the web** and **on iOS** (wrapped with Capacitor).
 - **Tailwind CSS v4**, with design tokens in `src/index.css`
 - **Dexie** (IndexedDB) for local-first storage, plus `dexie-react-hooks` for live queries
 - **@dnd-kit** for touch, mouse and keyboard drag and drop
-- **Web Speech API** for dictation on the web, and **@capacitor-community/speech-recognition** (Apple's Speech framework) in the iOS app
+- **Web Speech API** for dictation on the web, and **@capgo/capacitor-speech-recognition** (Apple's Speech framework) in the iOS app
 - **MediaRecorder** for voice notes
 - **Capacitor 8** for the iOS app
 - **Vitest** + `fake-indexeddb` for unit tests
@@ -82,40 +82,40 @@ One-time setup:
 
 ## Running on iOS
 
-Requirements: a Mac with Xcode 16+ and an Apple Developer account (needed for devices and the App Store).
+The native iOS project is in `ios/` and is ready to open in Xcode. It already includes the app icon, light and dark launch screens, and the permission messages iOS requires for photos, camera, microphone and speech recognition. It uses Swift Package Manager, so there's no CocoaPods step.
+
+**You need:** a Mac with Xcode 16 or later, and an Apple Developer Program membership ($99/year) to put the app on the App Store or TestFlight. A free Apple ID is enough to run it on your own iPhone.
+
+### Run it on your iPhone
 
 ```bash
-# one time
-npm run ios:add          # generates the native ios/ project. Commit it.
-
-# every time you change web code
-npm run ios:sync         # builds and copies into the iOS project
-npm run ios:open         # opens Xcode, then press Run
+npm ci
+npm run ios:sync   # build the web app and copy it into the iOS project
+npm run ios:open   # opens Xcode
 ```
 
-Before you ship:
+In Xcode:
 
-1. Change `appId` in `capacitor.config.ts` to your own bundle id (e.g. `com.yourname.lantern`).
-2. In Xcode, set your team under *Signing & Capabilities*.
-3. Add these usage strings to `ios/App/App/Info.plist`. iOS shows them when it asks for permission, and the app crashes without them:
+1. Select the **App** project, then the **App** target, then **Signing & Capabilities**.
+2. Choose your **Team** (sign in to your Apple ID under Xcode → Settings → Accounts if needed).
+3. Change **Bundle Identifier** from `com.yourcompany.lantern` to your own, for example `com.yourname.lantern`. Use the same value as `appId` in `capacitor.config.ts`.
+4. Plug in your iPhone, select it at the top of the window, and press **Run** (⌘R). The first time, approve the developer profile on the phone under Settings → General → VPN & Device Management.
 
-   ```xml
-   <key>NSPhotoLibraryUsageDescription</key>
-   <string>Lantern lets you add photos to your memories.</string>
-   <key>NSCameraUsageDescription</key>
-   <string>Lantern lets you take a photo for a memory.</string>
-   <key>NSMicrophoneUsageDescription</key>
-   <string>Lantern uses the microphone for dictation and voice notes.</string>
-   <key>NSSpeechRecognitionUsageDescription</key>
-   <string>Lantern turns what you say into text so you can write memories by speaking.</string>
-   ```
-4. Generate the iOS app icons from `assets/icon-only.png` (1024×1024, already included):
+Run `npm run ios:sync` again whenever the web code changes.
 
-   ```bash
-   npx @capacitor/assets generate --ios
-   ```
+### Ship to TestFlight and the App Store
 
-   The web app uses `public/icon.svg`, the same mark with rounded corners.
+1. In [App Store Connect](https://appstoreconnect.apple.com), create the app with the same bundle identifier.
+2. In Xcode, select **Any iOS Device (arm64)**, then **Product → Archive**.
+3. In the Organizer window that opens, choose **Distribute App → App Store Connect → Upload**.
+4. After processing (usually 10–30 minutes), the build appears in App Store Connect under **TestFlight**. Add yourself and testers.
+5. When you're ready to launch, fill in the listing (screenshots, description, privacy policy URL, the "Data Not Collected" privacy label) and **Submit for Review**.
+
+For each new release, raise **Version** or **Build** in the target's **General** tab before archiving.
+
+### Updating icons and the launch screen
+
+Edit `assets/icon-only.png` (1024×1024), `assets/splash.png` and `assets/splash-dark.png`, then run `npm run ios:assets`.
 
 ## Project structure
 

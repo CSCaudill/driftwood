@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
  * Dictation: speak and it types.
  *
  * - Web (Chrome, Edge, Safari): the Web Speech API.
- * - iOS app: @capacitor-community/speech-recognition, which uses Apple's
+ * - iOS app: @capgo/capacitor-speech-recognition, which uses Apple's
  *   on-device Speech framework. WKWebView doesn't expose the Web Speech API,
  *   so the native plugin is required there.
  *
@@ -125,7 +125,7 @@ function startWeb(h: DictationHandlers): DictationSession {
 }
 
 async function startNative(h: DictationHandlers): Promise<DictationSession> {
-  const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+  const { SpeechRecognition } = await import('@capgo/capacitor-speech-recognition');
   const { available } = await SpeechRecognition.available();
   if (!available) throw new Error('Dictation isn’t available on this device.');
 
@@ -156,7 +156,7 @@ async function startNative(h: DictationHandlers): Promise<DictationSession> {
     if (data.status === 'stopped') void finish();
   });
 
-  SpeechRecognition.start({ language: language(), partialResults: true, popup: false }).catch((e: Error) => {
+  SpeechRecognition.start({ language: language(), partialResults: true, popup: false, addPunctuation: true }).catch((e: Error) => {
     h.onError(e.message || 'Dictation stopped unexpectedly.');
     void finish();
   });

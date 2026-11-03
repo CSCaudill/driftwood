@@ -97,7 +97,7 @@ export function FrameScreen() {
 
       {!settings.birthYear && (
         <p className="mt-6 rounded-2xl bg-sunken px-4 py-3 text-sm text-graphite">
-          Add your birth year in Settings and Driftwood will suggest school years and milestones to start your frame.
+          Add your birth year in Settings and Lantern will suggest school years and milestones to start your frame.
         </p>
       )}
 

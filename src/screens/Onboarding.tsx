@@ -20,13 +20,13 @@ export function Onboarding() {
   return (
     <main className="safe-top safe-bottom flex min-h-dvh items-center justify-center px-6 py-10">
       <div className="w-full max-w-md">
-        <img src="./icon.svg" alt="Driftwood" className="h-16 w-16 rounded-[18px] shadow-raise" />
+        <img src="./icon.svg" alt="Lantern" className="h-16 w-16 rounded-[18px] shadow-raise" />
         <h1 className="display mt-8 text-[2.4rem] font-semibold leading-[1.05]">
-          Collect the pieces as they wash up.
+          Bring your past back into the light.
         </h1>
         <p className="reading mt-4 text-[1.05rem] text-graphite">
-          Memories come back a piece at a time, often without a date. Write each one down, even the faint ones. Driftwood
-          keeps them in order, so a picture of your life slowly takes shape.
+          Memories come back a piece at a time, often without a date. Write each one down, even the faint ones. Lantern
+          keeps them in order, shows the years that are still quiet, and helps you find your way back into them.
         </p>
 
         <div className="mt-8 space-y-5">

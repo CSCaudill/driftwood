@@ -1,8 +1,8 @@
-# Driftwood
+# Lantern
 
-Memories wash up a piece at a time. Collect each one, and place it on the timeline of your life.
+Bring your past back into the light. Capture memories as they come back, place them on the timeline of your life, and get help with the years that are still quiet.
 
-Driftwood is for people who want to rebuild a picture of their past, including people who don't remember much of it. Memories often come back as fragments with no date. The app lets you write them down in seconds, file them as precisely or loosely as you actually know, and rearrange them as more comes back.
+Lantern is for people who want to rebuild a picture of their past, including people who don't remember much of it. Memories often come back as fragments with no date. The app lets you write them down in seconds, file them as precisely or loosely as you actually know, and rearrange them as more comes back.
 
 One codebase runs **on the web** and **on iOS** (wrapped with Capacitor).
 
@@ -31,11 +31,12 @@ One codebase runs **on the web** and **on iOS** (wrapped with Capacitor).
 | **Clarity** | Each memory is marked vivid, partial or faint, and drawn that way: faint memories are lighter, with an open dashed dot and a softened photo. |
 | **Rearrange** | Drag memories into the order you remember them. Dropping one into another year re-dates it, with **Undo**. Exact-day memories are pinned. "Sort by date" resets a year. |
 | **Unplaced** | An inbox for memories with no date yet. One-line quick capture, then **Place it** later. |
+| **Remembered or told** | Every memory records where it comes from: you remember it, someone told you (and who), you know it from a photo or video, or some of each. Psychologists call this remembering versus knowing. Told and recorded memories are labeled and can be filtered, so what you recall stays distinct from what you've heard. |
 | **Gap prompts** | Empty stretches of the timeline show what you know about those years (where you lived, your grade, milestones) and a **Help me remember** button. It opens Reflect focused on that stretch, with prompts built from your age, your life frame, people from nearby memories, and the memories on either side. Long gaps are split by stage of life. Reflect also points out the quietest stretch of your timeline. Prompts ask open questions and never suggest what happened. |
 | **Reflect** | A focused writing screen: one prompt at a time, **Another prompt** to shuffle, a theme filter, and **Not for me** to retire a prompt. Writing is saved as a draft per prompt, so shuffling never loses anything. **Save as a memory** carries your writing into the editor with a suggested title and age range, where you add the date, people and photos. 35 prompts on places, people, senses, firsts, everyday life and milestones. |
 | **People** | Family and friends as real records with a relationship ("Mom", "Best friend") and an optional photo. "Who was there?" in the editor, avatars on the timeline, a People directory grouped into Family, Friends and Others, a page for each person with every shared memory in order, and filtering the timeline by person. |
 | **Voice** | **Dictation** (speak and it types) in the editor, on Reflect and in quick capture. **Voice notes**: record yourself telling a memory and keep the audio with it. |
-| **Life frame** | Reference points memories hang on, an idea borrowed from the "life history calendar" researchers use to improve recall. Stages of life (school years, decades), homes, work, relationships and milestones. Driftwood suggests school stages and common milestones from your birth year. Stages color the timeline spine; homes, work, milestones and your school grade show alongside each year. |
+| **Life frame** | Reference points memories hang on, an idea borrowed from the "life history calendar" researchers use to improve recall. Stages of life (school years, decades), homes, work, relationships and milestones. Lantern suggests school stages and common milestones from your birth year. Stages color the timeline spine; homes, work, milestones and your school grade show alongside each year. |
 | **Photos** | Pick from the phone's photo library or take a picture: the iOS picker offers Photo Library, Take Photo and Choose File. Photos are downscaled on the device, and the capture date is read from the photo's EXIF data and offered as the memory's date. |
 | **Details** | Place and tags (autocompleted from what you've used before), feeling, favorites, and **Keep it covered** for memories you don't want shown on the timeline. |
 | **Search** | Full-text search across titles, notes, places, people and tags, with favorite and feeling filters. |
@@ -75,7 +76,7 @@ One-time setup:
 2. In GitHub, add two repository secrets (Settings → Secrets and variables → Actions):
    - `CLOUDFLARE_API_TOKEN`: the token from step 1
    - `CLOUDFLARE_ACCOUNT_ID`: shown in the Cloudflare dashboard under Workers & Pages
-3. Push to `main`. The first run creates the `driftwood` Pages project and deploys to `https://driftwood.pages.dev` (or a similar name if that's taken). Add a custom domain in the Pages project settings.
+3. Push to `main`. The first run creates the `lantern-memories` Pages project and deploys to `https://lantern-memories.pages.dev` (Cloudflare adds a suffix if that name is taken). Add a custom domain in the Pages project settings.
 
 `public/_headers` sets security headers and long-term caching for the hashed build assets.
 
@@ -94,19 +95,19 @@ npm run ios:open         # opens Xcode, then press Run
 
 Before you ship:
 
-1. Change `appId` in `capacitor.config.ts` to your own bundle id (e.g. `com.yourname.driftwood`).
+1. Change `appId` in `capacitor.config.ts` to your own bundle id (e.g. `com.yourname.lantern`).
 2. In Xcode, set your team under *Signing & Capabilities*.
 3. Add these usage strings to `ios/App/App/Info.plist`. iOS shows them when it asks for permission, and the app crashes without them:
 
    ```xml
    <key>NSPhotoLibraryUsageDescription</key>
-   <string>Driftwood lets you add photos to your memories.</string>
+   <string>Lantern lets you add photos to your memories.</string>
    <key>NSCameraUsageDescription</key>
-   <string>Driftwood lets you take a photo for a memory.</string>
+   <string>Lantern lets you take a photo for a memory.</string>
    <key>NSMicrophoneUsageDescription</key>
-   <string>Driftwood uses the microphone for dictation and voice notes.</string>
+   <string>Lantern uses the microphone for dictation and voice notes.</string>
    <key>NSSpeechRecognitionUsageDescription</key>
-   <string>Driftwood turns what you say into text so you can write memories by speaking.</string>
+   <string>Lantern turns what you say into text so you can write memories by speaking.</string>
    ```
 4. Generate the iOS app icons from `assets/icon-only.png` (1024×1024, already included):
 
@@ -149,13 +150,15 @@ Within a year, memories are ordered by date until you rearrange them. Then every
 
 ## Data migrations
 
+When the app was renamed (Lifeline → Driftwood → Lantern), its local database name changed too. On first launch Lantern copies any data saved under an older name on the same device, and leaves the old copy in place.
+
 The database is versioned with Dexie. Version 2 turned the plain name tags from version 1 into People records, matching names case-insensitively, and added voice notes. It runs automatically the first time an existing user opens the new version. Backups carry their own version number and are upgraded the same way on import.
 
 ## Ideas for expanding it
 
 **Near term**
 - **Transcribe voice notes.** Turn a recorded note into text after the fact, on the device with Apple's Speech framework or with Whisper.
-- **Hands-free capture.** An iOS Shortcut or Siri intent ("Hey Siri, add a memory to Driftwood") that opens straight into dictation.
+- **Hands-free capture.** An iOS Shortcut or Siri intent ("Hey Siri, add a memory to Lantern") that opens straight into dictation.
 - **Face ID lock** (`capacitor-native-biometric`) and an encrypted database option for an app that may hold sensitive material.
 - **"On this day" and gentle reminders.** Optional local notifications with a prompt, at a time you choose.
 - **Photo-first capture.** Pick a batch of old photos and get one draft memory per photo, pre-dated from EXIF.

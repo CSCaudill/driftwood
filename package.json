@@ -1,9 +1,9 @@
 {
-  "name": "driftwood",
+  "name": "lantern",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Driftwood: collect memories as they come back and place them on a timeline of your life. Runs on the web and on iOS (via Capacitor).",
+  "description": "Lantern: rebuild the story of your life. Capture memories as they come back, place them on a timeline, and get help with the years that are still quiet. Runs on the web and on iOS (via Capacitor).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

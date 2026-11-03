@@ -265,3 +265,44 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------- welcome scene */
+@keyframes ls-sweep {
+  from { transform: translateY(0); opacity: 0.4; }
+  20% { opacity: 1; }
+  to { transform: translateY(150px); opacity: 1; }
+}
+@keyframes ls-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes ls-light-up {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ls-dim {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.ls-sweep {
+  animation: ls-sweep 2.9s cubic-bezier(0.45, 0, 0.25, 1) 0.3s both;
+}
+.ls-spine {
+  stroke-dasharray: 1;
+  animation: ls-draw 2.9s cubic-bezier(0.45, 0, 0.25, 1) 0.3s both;
+}
+.ls-memory .ls-vivid,
+.ls-memory .ls-label {
+  animation: ls-light-up 0.6s ease-out both;
+  animation-delay: inherit;
+}
+.ls-memory .ls-faint {
+  animation: ls-dim 0.6s ease-out both;
+  animation-delay: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-sweep { animation: none; transform: translateY(150px); }
+  .ls-spine { animation: none; stroke-dasharray: none; }
+  .ls-memory .ls-vivid, .ls-memory .ls-label { animation: none; opacity: 1; }
+  .ls-memory .ls-faint { animation: none; opacity: 0; }
+}

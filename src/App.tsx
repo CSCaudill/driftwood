@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { HashRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { MemoryEditorHost } from './components/MemoryEditor';
 import { useMediaQuery, useSettings } from './hooks/data';
@@ -8,6 +8,7 @@ import { MoreScreen } from './screens/MoreScreen';
 import { PeopleScreen } from './screens/PeopleScreen';
 import { PersonScreen } from './screens/PersonScreen';
 import { ReflectScreen } from './screens/ReflectScreen';
+import { TodayScreen } from './screens/TodayScreen';
 import { MemoryScreen } from './screens/MemoryScreen';
 import { Onboarding } from './screens/Onboarding';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -27,6 +28,25 @@ function useTheme() {
       .querySelectorAll('meta[name="theme-color"]')
       .forEach((m) => m.setAttribute('content', dark ? '#121618' : '#F2F3EF'));
   }, [theme, prefersDark, loaded]);
+}
+
+/** Open on Today once per launch; after that, the app goes where you go. */
+function LaunchToToday() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem('lantern.today') === '1';
+      sessionStorage.setItem('lantern.today', '1');
+    } catch {
+      /* storage unavailable: just don't redirect */
+      seen = true;
+    }
+    if (!seen && pathname === '/') navigate('/today', { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
 }
 
 function ScrollToTop() {
@@ -51,7 +71,9 @@ export default function App() {
           <Onboarding />
         ) : (
           <AppShell>
+            <LaunchToToday />
             <Routes>
+              <Route path="/today" element={<TodayScreen />} />
               <Route path="/" element={<TimelineScreen />} />
               <Route path="/reflect" element={<ReflectScreen />} />
               <Route path="/people" element={<PeopleScreen />} />

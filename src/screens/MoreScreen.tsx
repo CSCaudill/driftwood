@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, ChevronRight, Inbox, Settings } from 'lucide-react';
+import { BookOpen, ChevronRight, Inbox, Settings, Sun } from 'lucide-react';
 import { useChapters, useMemories } from '../hooks/data';
 
 /** Phone-only hub for the screens that don't fit in the tab bar. */
@@ -8,6 +8,7 @@ export function MoreScreen() {
   const chapters = useChapters();
   const unplaced = memories.filter((m) => m.groupYear == null).length;
   const rows = [
+    { to: '/today', icon: Sun, label: 'Today', detail: 'Today’s prompt and a memory to revisit', badge: 0 },
     { to: '/unplaced', icon: Inbox, label: 'Unplaced', detail: unplaced ? `${unplaced} waiting for a date` : 'Nothing waiting', badge: unplaced },
     { to: '/frame', icon: BookOpen, label: 'Life frame', detail: chapters.length ? `${chapters.length} reference points` : 'Homes, school, work, milestones', badge: 0 },
     { to: '/settings', icon: Settings, label: 'Settings', detail: 'Profile, appearance, backups', badge: 0 },

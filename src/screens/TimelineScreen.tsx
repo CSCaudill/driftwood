@@ -4,6 +4,7 @@ import { ArrowDownUp, House, Plus, Search, Sparkles, Star, X } from 'lucide-reac
 import { ArrangeList } from '../components/ArrangeList';
 import { YearBlock } from '../components/YearBlock';
 import { PromptCard } from '../components/PromptCard';
+import { SampleBanner } from '../components/SampleBanner';
 import { Button, Chip, EmptyState, IconButton, cx } from '../components/ui';
 import { useChapters, useMemories, useSettings } from '../hooks/data';
 import { loadSampleLife } from '../lib/sample';
@@ -215,6 +216,7 @@ export function TimelineScreen() {
         </>
       ) : (
         <div className="relative pb-32" style={{ ['--spine-x' as string]: '4.75rem' }}>
+          {!filtering && <SampleBanner className="mb-3 mt-2" />}
           {!filtering && unplacedCount > 0 && (
             <Link
               to="/unplaced"

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BookOpen, Ellipsis, Feather, Inbox, Plus, Settings, Users, Waypoints } from 'lucide-react';
+import { BookOpen, Ellipsis, Feather, Inbox, Plus, Settings, Sun, Users, Waypoints } from 'lucide-react';
 import { useMemories } from '../hooks/data';
 import { useApp } from '../state/app';
 import { cx } from './ui';
@@ -9,6 +9,7 @@ type NavItem = { to: string; label: string; icon: typeof Waypoints; end?: boolea
 
 /** Desktop sidebar. */
 const NAV: NavItem[] = [
+  { to: '/today', label: 'Today', icon: Sun },
   { to: '/', label: 'Timeline', icon: Waypoints, end: true },
   { to: '/reflect', label: 'Reflect', icon: Feather },
   { to: '/people', label: 'People', icon: Users },
@@ -18,8 +19,8 @@ const NAV: NavItem[] = [
 ];
 
 /** Phone tab bar: four tabs around the capture button; the rest live under More. */
-const TABS_LEFT: NavItem[] = [NAV[0], NAV[1]];
-const TABS_RIGHT: NavItem[] = [NAV[2], { to: '/more', label: 'More', icon: Ellipsis }];
+const TABS_LEFT: NavItem[] = [NAV[1], NAV[2]];
+const TABS_RIGHT: NavItem[] = [NAV[3], { to: '/more', label: 'More', icon: Ellipsis }];
 
 /** Sidebar on wide screens, tab bar with a capture button on phones. */
 export function AppShell({ children }: { children: ReactNode }) {
@@ -33,10 +34,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh lg:pl-60">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-paper/60 px-4 py-6 lg:flex">
-        <div className="flex items-center gap-2.5 px-2">
+        <NavLink to="/today" className="flex items-center gap-2.5 rounded-xl px-2">
           <img src="./icon.svg" alt="" className="h-8 w-8 rounded-[9px]" />
           <span className="display text-lg font-semibold">Lantern</span>
-        </div>
+        </NavLink>
         <button
           onClick={() => openEditor()}
           className="mt-7 flex h-11 items-center justify-center gap-2 rounded-xl bg-tide font-medium text-paper hover:bg-tide-strong"
@@ -120,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function Tab({ to, label, icon: Icon, end, badge }: NavItem & { badge: number }) {
   const { pathname } = useLocation();
-  const moreActive = ['/unplaced', '/frame', '/settings'].some((p) => pathname.startsWith(p));
+  const moreActive = ['/unplaced', '/frame', '/settings', '/today'].some((p) => pathname.startsWith(p));
   const peopleActive = pathname.startsWith('/people');
   return (
     <NavLink

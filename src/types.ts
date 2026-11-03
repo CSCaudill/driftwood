@@ -91,6 +91,8 @@ export interface Memory {
   promptText?: string | null;
   createdAt: number;
   updatedAt: number;
+  /** Part of the sample life; removed by "Exit sample". */
+  sample?: boolean;
 }
 
 export interface Photo {
@@ -117,6 +119,7 @@ export interface Person {
   notes: string;
   createdAt: number;
   updatedAt: number;
+  sample?: boolean;
 }
 
 /** A spoken voice note attached to a memory. */
@@ -154,6 +157,7 @@ export interface Chapter {
   endYear: number;
   color: ChapterColor;
   createdAt: number;
+  sample?: boolean;
 }
 
 export type Anchor = Chapter;
@@ -171,6 +175,8 @@ export interface Settings {
   showGrades: boolean;
   /** Life-frame suggestions the person said no to. */
   frameDismissed: string[];
+  /** The sample life is loaded. */
+  sampleActive: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -181,4 +187,5 @@ export const DEFAULT_SETTINGS: Settings = {
   showGaps: true,
   showGrades: true,
   frameDismissed: [],
+  sampleActive: false,
 };

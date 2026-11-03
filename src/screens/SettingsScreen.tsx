@@ -6,6 +6,7 @@ import { useMemories, useSettings } from '../hooks/data';
 import { downloadBackup, parseBackup, restoreBackup, type BackupFile } from '../lib/backup';
 import { currentYear } from '../lib/fuzzyDate';
 import { useApp } from '../state/app';
+import { useExitSample } from '../components/SampleBanner';
 import type { ThemePreference } from '../types';
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
@@ -25,6 +26,7 @@ export function SettingsScreen() {
   const [pending, setPending] = useState<BackupFile | null>(null);
   const [wiping, setWiping] = useState(false);
   const [name, setName] = useState<string | null>(null);
+  const exitSample = useExitSample();
 
   const years: number[] = [];
   for (let y = currentYear(); y >= 1920; y--) years.push(y);
@@ -128,11 +130,13 @@ export function SettingsScreen() {
           </Button>
           <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => onFile(e.target.files?.[0])} />
         </div>
-        <div className="border-t border-line pt-5">
+        <div className="flex flex-wrap gap-2 border-t border-line pt-5">
+          {settings.sampleActive && <Button onClick={exitSample.open}>Exit sample life</Button>}
           <Button variant="danger" onClick={() => setWiping(true)}>Delete everything</Button>
         </div>
       </Group>
 
+      {exitSample.sheet}
       <p className="mt-8 text-center text-xs text-faint">Lantern 0.1.0</p>
 
       <Sheet

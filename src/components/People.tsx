@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
-import { Camera, Check, Plus, Trash2, X } from 'lucide-react';
+import { Camera, Check, Plus, Trash2 } from 'lucide-react';
 import { createPerson, deletePerson, findOrCreatePerson, updatePerson } from '../db/repo';
 import { useBlobUrl, useMemories, usePeople } from '../hooks/data';
 import { processAvatar } from '../lib/images';
 import { RELATIONSHIPS, chapterVar } from '../lib/meta';
 import { useResolvedPeople } from '../state/people';
 import type { Person } from '../types';
-import { Button, FieldLabel, Sheet, TextArea, TextInput, cx } from './ui';
+import { Button, FieldLabel, RemoveButton, Sheet, TextArea, TextInput, cx } from './ui';
 
 // ------------------------------------------------------------------ Avatar
 
@@ -110,17 +110,15 @@ export function PeoplePicker({ value, onChange }: { value: string[]; onChange: (
       {selected.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {selected.map((p) => (
-            <span key={p.id} className="inline-flex h-9 items-center gap-2 rounded-full bg-tide-wash py-1 pl-1 pr-1.5 text-sm text-tide">
-              <PersonAvatar person={p} size={28} />
+            <span key={p.id} className="inline-flex h-10 items-center gap-2 rounded-full bg-tide-wash py-1 pl-1 pr-1 text-sm text-tide">
+              <PersonAvatar person={p} size={30} />
               <span className="font-medium">{p.name}</span>
-              <button
-                type="button"
-                aria-label={`Remove ${p.name}`}
-                onClick={() => onChange(value.filter((id) => id !== p.id))}
-                className="rounded-full p-1 hover:bg-paper/60"
-              >
-                <X size={14} />
-              </button>
+              <RemoveButton
+                label={`Remove ${p.name}`}
+                onRemove={() => onChange(value.filter((id) => id !== p.id))}
+                className="h-8 w-8 hover:bg-paper/60"
+                iconSize={16}
+              />
             </span>
           ))}
         </div>

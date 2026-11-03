@@ -19,7 +19,8 @@ import { useApp } from '../state/app';
 import { FuzzyDatePicker } from './FuzzyDatePicker';
 import { PeoplePicker } from './People';
 import { PhotoPicker, type EditorPhoto } from './Photos';
-import { DictateButton, VoicePlayer, VoiceRecorder } from './Voice';
+import { DictateButton, VoicePlayer, VoiceRecorder, type RecorderControl } from './Voice';
+import { suggestTitle } from '../lib/prompts';
 import { TokenInput } from './TokenInput';
 import { Button, Chip, FieldLabel, Segmented, Sheet, TextArea, TextInput, Toggle, cx } from './ui';
 
@@ -46,6 +47,10 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
   const [draft, setDraft] = useState<MemoryDraft>(() => emptyDraft(editor?.initial));
   const [photos, setPhotos] = useState<EditorPhoto[]>([]);
   const [clips, setClips] = useState<EditorClip[]>([]);
+  const clipsRef = useRef(clips);
+  clipsRef.current = clips;
+  const recorder = useRef<RecorderControl | null>(null);
+  const [recording, setRecording] = useState(false);
   const [loaded, setLoaded] = useState(!isEdit);
   const [showMore, setShowMore] = useState(false);
   const [photoDate, setPhotoDate] = useState<string | null>(null);
@@ -93,14 +98,33 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const canSave = draft.title.trim().length > 0 && !saving;
+  // A title is optional: notes, a photo or a voice note are enough on their own.
+  const hasContent = !!(draft.title.trim() || draft.notes.trim() || photos.length || clips.length || recording);
+  const canSave = hasContent && !saving;
+
+  const fallbackTitle = (withClips: boolean) => {
+    const fromNotes = suggestTitle(draft.notes);
+    if (fromNotes) return fromNotes;
+    const day = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (withClips) return `Voice note, ${day}`;
+    if (photos.length) return `Photo, ${day}`;
+    return 'Untitled memory';
+  };
 
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
     try {
+      // Finish a recording that's still running so it isn't lost.
+      let finishing: VoiceClip | null = null;
+      if (recorder.current) finishing = await recorder.current.stop();
+      const allClips = finishing
+        ? [...clipsRef.current.filter((c) => c.clip !== finishing), { key: 'finishing', clip: finishing }]
+        : clipsRef.current;
+      const finalDraft = { ...draft, title: draft.title.trim() || fallbackTitle(allClips.length > 0) };
+
       let id = editor?.memoryId;
-      if (!id) id = (await createMemory({ ...draft, photoIds: [] })).id;
+      if (!id) id = (await createMemory({ ...finalDraft, photoIds: [] })).id;
 
       const newOnes = photos.filter((p): p is Extract<EditorPhoto, { kind: 'new' }> => p.kind === 'new');
       const newIds = await savePhotos(id, newOnes.map((p) => p.data));
@@ -109,9 +133,9 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
       await prunePhotos(id, photoIds);
 
       // Drop recordings removed in the editor, then add the new ones.
-      await pruneRecordings(id, clips.filter((c) => c.storedId).map((c) => c.storedId!));
-      await saveRecordings(id, clips.filter((c) => !c.storedId).map((c) => c.clip));
-      const saved = await updateMemory(id, { ...draft, photoIds });
+      await pruneRecordings(id, allClips.filter((c) => c.storedId).map((c) => c.storedId!));
+      await saveRecordings(id, allClips.filter((c) => !c.storedId).map((c) => c.clip));
+      const saved = await updateMemory(id, { ...finalDraft, photoIds });
       editor?.onSaved?.(saved);
 
       setLastTouched(id);
@@ -140,6 +164,9 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
       title={editor?.heading ?? (isEdit ? 'Edit memory' : 'New memory')}
       footer={
         <div className="flex items-center justify-end gap-2">
+          {!hasContent && (
+            <p className="mr-auto text-sm text-faint">Write something, add a photo or record a voice note.</p>
+          )}
           <Button variant="quiet" onClick={onClose}>Cancel</Button>
           <Button variant="primary" onClick={save} disabled={!canSave}>
             {isEdit ? 'Save changes' : 'Save memory'}
@@ -224,7 +251,7 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
                 ))}
               </div>
             )}
-            <VoiceRecorder onRecorded={addClip} />
+            <VoiceRecorder onRecorded={addClip} onRecordingChange={setRecording} controlRef={recorder} />
           </section>
 
           <section>

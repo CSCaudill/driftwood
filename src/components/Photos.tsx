@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { ImagePlus, Loader2, X } from 'lucide-react';
+import { ImagePlus, Loader2 } from 'lucide-react';
 import { useBlobUrl } from '../hooks/data';
 import { processImage, type ProcessedPhoto } from '../lib/images';
-import { cx } from './ui';
+import { RemoveButton, cx } from './ui';
 
 /** A photo either already stored (id) or freshly picked and not yet saved. */
 export type EditorPhoto =
@@ -14,14 +14,12 @@ function Thumb({ blob, onRemove, label }: { blob: Blob; onRemove: () => void; la
   return (
     <div className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-sunken">
       {url && <img src={url} alt="" className="h-full w-full object-cover" />}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={label}
-        className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--overlay)] text-white backdrop-blur"
-      >
-        <X size={15} />
-      </button>
+      <RemoveButton
+        label={label}
+        onRemove={onRemove}
+        className="absolute right-1.5 top-1.5 h-8 w-8 bg-[var(--overlay)] text-white backdrop-blur"
+        iconSize={16}
+      />
     </div>
   );
 }

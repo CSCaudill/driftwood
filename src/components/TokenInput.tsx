@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
-import { cx } from './ui';
+import { RemoveButton, cx } from './ui';
 
 /** Free-text tokens (people, tags) with suggestions from what's been used before. */
 export function TokenInput({
@@ -36,16 +35,13 @@ export function TokenInput({
         )}
       >
         {value.map((v) => (
-          <span key={v} className="inline-flex h-7 items-center gap-1 rounded-lg bg-sunken pl-2.5 pr-1 text-sm">
+          <span key={v} className="inline-flex h-8 items-center gap-1 rounded-lg bg-sunken pl-2.5 pr-0.5 text-sm">
             {v}
-            <button
-              type="button"
-              aria-label={`Remove ${v}`}
-              onClick={() => onChange(value.filter((x) => x !== v))}
-              className="rounded p-0.5 text-graphite hover:text-ink"
-            >
-              <X size={14} />
-            </button>
+            <RemoveButton
+              label={`Remove ${v}`}
+              onRemove={() => onChange(value.filter((x) => x !== v))}
+              className="h-7 w-7 text-graphite hover:text-ink"
+            />
           </span>
         ))}
         <input

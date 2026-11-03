@@ -65,6 +65,20 @@ npm run build      # production build into dist/
 
 On first launch, choose **Look around with a sample life first** to see a populated timeline.
 
+## Deploying the web app
+
+`.github/workflows/deploy.yml` runs the type check, tests and build on every push and pull request. Pushes to `main` deploy to Cloudflare Pages, and pull requests get a preview URL posted as a comment.
+
+One-time setup:
+
+1. In Cloudflare, create an API token with the **Cloudflare Pages: Edit** permission (My Profile → API Tokens → Create Token).
+2. In GitHub, add two repository secrets (Settings → Secrets and variables → Actions):
+   - `CLOUDFLARE_API_TOKEN`: the token from step 1
+   - `CLOUDFLARE_ACCOUNT_ID`: shown in the Cloudflare dashboard under Workers & Pages
+3. Push to `main`. The first run creates the `driftwood` Pages project and deploys to `https://driftwood.pages.dev` (or a similar name if that's taken). Add a custom domain in the Pages project settings.
+
+`public/_headers` sets security headers and long-term caching for the hashed build assets.
+
 ## Running on iOS
 
 Requirements: a Mac with Xcode 16+ and an Apple Developer account (needed for devices and the App Store).

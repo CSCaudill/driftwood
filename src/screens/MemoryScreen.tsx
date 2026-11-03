@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Pencil, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, MessageCircle, Pencil, Star, Trash2 } from 'lucide-react';
 import { PersonAvatar } from '../components/People';
 import { VoicePlayer } from '../components/Voice';
 import { useResolvedPeople } from '../state/people';
@@ -9,9 +9,10 @@ import { db } from '../db/db';
 import { deleteMemory, toggleFavorite, restoreMemories } from '../db/repo';
 import { useChapters, useMemories, useMemory, usePhotos, useBlobUrl, useRecordings, useSettings } from '../hooks/data';
 import { formatFuzzyDate, precisionLabel } from '../lib/fuzzyDate';
-import { CLARITY, chapterVar, feelingMeta } from '../lib/meta';
+import { CLARITY, chapterVar, feelingMeta, sourceLabel } from '../lib/meta';
 import { buildSections } from '../lib/ordering';
 import { promptById } from '../lib/prompts';
+import { stageFor } from '../lib/frame';
 import { useApp } from '../state/app';
 import type { Photo } from '../types';
 
@@ -24,6 +25,7 @@ export function MemoryScreen() {
   const photos = usePhotos(memory?.photoIds ?? []);
   const people = useResolvedPeople(memory?.personIds ?? []);
   const recordings = useRecordings(memory?.id);
+  const tellers = useResolvedPeople(memory?.sourcePersonIds ?? []);
   const navigate = useNavigate();
   const { openEditor, showToast } = useApp();
   const [confirming, setConfirming] = useState(false);
@@ -53,9 +55,9 @@ export function MemoryScreen() {
   const clarity = CLARITY.find((c) => c.value === memory.clarity)!;
   const chapter =
     memory.groupYear != null
-      ? chapters.find((c) => memory.groupYear! >= c.startYear && memory.groupYear! <= c.endYear)
+      ? stageFor(chapters, memory.groupYear)
       : undefined;
-  const prompt = promptById(memory.promptId);
+  const promptText = memory.promptText ?? promptById(memory.promptId)?.text;
 
   const remove = async () => {
     const snapshot = memory;
@@ -115,6 +117,13 @@ export function MemoryScreen() {
             <ClarityMeter level={memory.clarity} />
             <dd>{clarity.label}</dd>
           </div>
+          {memory.source && (
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Source</dt>
+              <MessageCircle size={14} />
+              <dd>{sourceLabel(memory.source, tellers.map((p) => p.name)) ?? 'Remembered'}</dd>
+            </div>
+          )}
           {feeling && (
             <div className="flex items-center gap-1.5">
               <dt className="sr-only">Feeling</dt>
@@ -160,8 +169,8 @@ export function MemoryScreen() {
           </div>
         )}
 
-        {prompt && (
-          <p className="reading mt-6 border-l-2 border-tide pl-4 text-[0.95rem] italic text-graphite">{prompt.text}</p>
+        {promptText && (
+          <p className="reading mt-6 border-l-2 border-tide pl-4 text-[0.95rem] italic text-graphite">{promptText}</p>
         )}
 
         {memory.notes ? (

@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CLOUDFLARE_PROJECT: driftwood
+  CLOUDFLARE_PROJECT: lantern-memories
 
 jobs:
   test:

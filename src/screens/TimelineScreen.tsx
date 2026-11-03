@@ -1,19 +1,23 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowDownUp, Plus, Search, Sparkles, Star, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowDownUp, House, Plus, Search, Sparkles, Star, X } from 'lucide-react';
 import { ArrangeList } from '../components/ArrangeList';
 import { YearBlock } from '../components/YearBlock';
 import { PromptCard } from '../components/PromptCard';
 import { Button, Chip, EmptyState, IconButton, cx } from '../components/ui';
 import { useChapters, useMemories, useSettings } from '../hooks/data';
 import { loadSampleLife } from '../lib/sample';
-import { chapterVar, FEELINGS } from '../lib/meta';
+import { updateSettings } from '../db/repo';
+import { chapterVar, FEELINGS, SOURCES } from '../lib/meta';
 import { buildSections } from '../lib/ordering';
 import { currentYear } from '../lib/fuzzyDate';
 import { useApp } from '../state/app';
+import { FrameContext } from '../components/FrameContext';
+import { contextForRange, contextForYear, gradeLabel, stageFor } from '../lib/frame';
+import { splitByStage } from '../lib/gapPrompts';
 import { usePeopleLookup } from '../state/people';
 import { PersonAvatar } from '../components/People';
-import type { Chapter, Feeling, Memory } from '../types';
+import type { Chapter, Feeling, Memory, MemorySource } from '../types';
 
 type Row =
   | { kind: 'year'; year: number; items: Memory[] }
@@ -24,16 +28,18 @@ export function TimelineScreen() {
   const settings = useSettings();
   const chapters = useChapters();
   const { openEditor, lastTouched, setLastTouched } = useApp();
+  const navigate = useNavigate();
   const [arranging, setArranging] = useState(false);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [favOnly, setFavOnly] = useState(false);
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [personId, setPersonId] = useState<string | null>(null);
+  const [source, setSource] = useState<MemorySource | null>(null);
   const peopleMap = usePeopleLookup();
   const searchInput = useRef<HTMLInputElement>(null);
 
-  const filtering = !!query.trim() || favOnly || !!feeling || !!personId;
+  const filtering = !!query.trim() || favOnly || !!feeling || !!personId || !!source;
   const filtered = useMemo(() => {
     if (!memories) return [];
     const q = query.trim().toLowerCase();
@@ -41,6 +47,7 @@ export function TimelineScreen() {
       if (favOnly && !m.favorite) return false;
       if (feeling && m.feeling !== feeling) return false;
       if (personId && !m.personIds.includes(personId)) return false;
+      if (source && (m.source ?? 'remembered') !== source) return false;
       if (!q) return true;
       const names = m.personIds.map((id) => {
         const p = peopleMap.get(id);
@@ -49,7 +56,7 @@ export function TimelineScreen() {
       const hay = [m.title, m.notes, m.location, ...names, ...m.tags].join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [memories, query, favOnly, feeling, personId, peopleMap]);
+  }, [memories, query, favOnly, feeling, personId, source, peopleMap]);
 
   // People who appear most, for the filter row.
   const topPeople = useMemo(() => {
@@ -68,14 +75,23 @@ export function TimelineScreen() {
   const rows: Row[] = useMemo(() => {
     const out: Row[] = [];
     const showGaps = settings.showGaps && !filtering;
+    // Long empty stretches are split by stage of life, so each one gets
+    // prompts for a single period rather than "ages 12–35".
+    const pushGap = (from: number, to: number) => {
+      const pieces = to - from + 1 > 6 ? splitByStage(from, to, settings.birthYear) : [[from, to] as [number, number]];
+      for (const [a, b] of pieces) out.push({ kind: 'gap', from: a, to: b });
+    };
     if (showGaps && settings.birthYear && sections[0] && sections[0].year > settings.birthYear) {
-      out.push({ kind: 'gap', from: settings.birthYear, to: sections[0].year - 1 });
+      pushGap(settings.birthYear, sections[0].year - 1);
     }
     sections.forEach((s, i) => {
       out.push({ kind: 'year', year: s.year, items: s.items });
       const next = sections[i + 1];
-      if (showGaps && next && next.year - s.year > 1) out.push({ kind: 'gap', from: s.year + 1, to: next.year - 1 });
+      if (showGaps && next && next.year - s.year > 1) pushGap(s.year + 1, next.year - 1);
     });
+    // The years since the most recent memory, up to last year.
+    const last = sections[sections.length - 1];
+    if (showGaps && last && last.year < currentYear() - 1) pushGap(last.year + 1, currentYear() - 1);
     return out;
   }, [sections, settings.showGaps, settings.birthYear, filtering]);
 
@@ -113,7 +129,7 @@ export function TimelineScreen() {
             </p>
           </div>
           {!arranging && (
-            <IconButton label="Search memories" active={searching} onClick={() => { setSearching((s) => !s); if (searching) { setQuery(''); setFavOnly(false); setFeeling(null); setPersonId(null); } }}>
+            <IconButton label="Search memories" active={searching} onClick={() => { setSearching((s) => !s); if (searching) { setQuery(''); setFavOnly(false); setFeeling(null); setPersonId(null); setSource(null); } }}>
               <Search size={20} />
             </IconButton>
           )}
@@ -159,6 +175,11 @@ export function TimelineScreen() {
               <Chip selected={favOnly} onClick={() => setFavOnly((f) => !f)}>
                 <Star size={13} className={favOnly ? 'fill-current' : ''} /> Favorites
               </Chip>
+              {SOURCES.map((o) => (
+                <Chip key={o.value} selected={source === o.value} onClick={() => setSource(source === o.value ? null : o.value)} className="shrink-0">
+                  {o.value === 'remembered' ? 'Remembered' : o.value === 'told' ? 'Told to me' : o.value === 'record' ? 'From photos' : 'Some of each'}
+                </Chip>
+              ))}
               {FEELINGS.map((f) => (
                 <Chip key={f.value} selected={feeling === f.value} onClick={() => setFeeling(feeling === f.value ? null : f.value)} className="shrink-0">
                   <span className="h-2 w-2 rounded-full" style={{ background: f.color }} aria-hidden />
@@ -206,6 +227,26 @@ export function TimelineScreen() {
               <span className="font-medium text-tide">Place</span>
             </Link>
           )}
+          {!filtering && settings.birthYear && !chapters.some((c) => c.kind === 'home') && !settings.frameDismissed.includes('card-frame') && (
+            <div className="mb-3 mt-2 flex items-start gap-3 rounded-2xl border border-line bg-paper px-4 py-3.5">
+              <House size={18} className="mt-0.5 shrink-0 text-tide" />
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="font-medium text-ink">Where did you live growing up?</p>
+                <p className="mt-0.5 text-graphite">
+                  Homes, schools and jobs are some of the strongest memory cues. Add them to your life frame and they’ll show
+                  alongside every year.
+                </p>
+                <Link to="/frame" className="mt-2 inline-block font-medium text-tide">Build my life frame</Link>
+              </div>
+              <button
+                aria-label="Dismiss"
+                onClick={() => updateSettings({ frameDismissed: [...settings.frameDismissed, 'card-frame'] })}
+                className="-mr-1 rounded-lg p-1.5 text-faint hover:bg-sunken hover:text-ink"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
           {!filtering && <PromptCard />}
 
           {filtering && sections.length === 0 && (
@@ -218,9 +259,9 @@ export function TimelineScreen() {
 
           {rows.map((row, i) => {
             const startYear = row.kind === 'year' ? row.year : row.from;
-            const chapter = chapterFor(chapters, startYear);
+            const chapter = stageFor(chapters, startYear);
             const prev = rows[i - 1];
-            const prevChapter = prev ? chapterFor(chapters, prev.kind === 'year' ? prev.year : prev.from) : undefined;
+            const prevChapter = prev ? stageFor(chapters, prev.kind === 'year' ? prev.year : prev.from) : undefined;
             const heading = chapter && chapter.id !== prevChapter?.id && !filtering;
             return (
               <Fragment key={row.kind === 'year' ? row.year : `gap-${row.from}`}>
@@ -230,6 +271,9 @@ export function TimelineScreen() {
                     from={row.from}
                     to={row.to}
                     chapter={chapter}
+                    context={contextForRange(row.from, row.to, chapters)}
+                    birthYear={settings.birthYear}
+                    onHelp={() => navigate(`/reflect?from=${row.from}&to=${row.to}`)}
                     onAdd={() =>
                       openEditor({
                         initial: {
@@ -248,6 +292,7 @@ export function TimelineScreen() {
                     chapter={chapter}
                     items={row.items}
                     lastTouched={lastTouched}
+                    context={filtering ? undefined : contextForYear(row.year, chapters, settings.birthYear, settings.showGrades)}
                   />
                 )}
               </Fragment>
@@ -261,13 +306,6 @@ export function TimelineScreen() {
       {!arranging && decades.length > 2 && <DecadeScrubber decades={decades} years={sections.map((s) => s.year)} />}
     </div>
   );
-}
-
-function chapterFor(chapters: Chapter[], year: number) {
-  // Most specific (shortest) chapter wins when chapters overlap.
-  return chapters
-    .filter((c) => year >= c.startYear && year <= c.endYear)
-    .sort((a, b) => a.endYear - a.startYear - (b.endYear - b.startYear))[0];
 }
 
 function ChapterHeading({ chapter }: { chapter: Chapter }) {
@@ -287,28 +325,67 @@ function ChapterHeading({ chapter }: { chapter: Chapter }) {
   );
 }
 
-function GapRow({ from, to, onAdd, chapter }: { from: number; to: number; onAdd: () => void; chapter?: Chapter }) {
-    return (
+function GapRow({
+  from,
+  to,
+  onAdd,
+  onHelp,
+  chapter,
+  context,
+  birthYear,
+}: {
+  from: number;
+  to: number;
+  onAdd: () => void;
+  onHelp: () => void;
+  chapter?: Chapter;
+  context: { ongoing: Chapter[]; milestones: Chapter[] };
+  birthYear: number | null;
+}) {
+  const years = from === to ? String(from) : `${from} to ${to}`;
+  const grade = birthYear != null ? gradeSpan(from, to, birthYear) : null;
+  return (
     <div className="relative flex">
       <div className="w-[var(--spine-x)] shrink-0 pr-3 pt-2">
         <div className="year-numeral text-base leading-none text-faint">{from}</div>
         {from !== to && <div className="year-numeral mt-0.5 text-base leading-none text-faint">{to}</div>}
       </div>
       <div
-        className="flex min-w-0 flex-1 items-center justify-between gap-3 border-l-2 border-dashed pb-4 pl-5 pt-1"
+        className="min-w-0 flex-1 border-l-2 border-dashed pb-5 pl-5 pt-1"
         style={{ borderColor: chapter ? chapterVar(chapter.color) : 'var(--line)' }}
       >
-        <p className="text-sm text-faint">Nothing here yet</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-faint">Nothing here yet</p>
+          <button
+            onClick={onAdd}
+            aria-label={`Add a memory from ${years}`}
+            title={`Add a memory from ${years}`}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-tide hover:bg-tide-wash"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+        <FrameContext ongoing={context.ongoing} milestones={context.milestones} grade={grade} className="mt-1" />
         <button
-          onClick={onAdd}
-          aria-label={`Add a memory from ${from === to ? from : `${from} to ${to}`}`}
-          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-2.5 text-sm font-medium text-tide hover:bg-tide-wash"
+          onClick={onHelp}
+          className="-ml-2.5 mt-1.5 inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-tide hover:bg-tide-wash"
         >
-          <Plus size={15} /> Add one
+          <Sparkles size={14} /> Help me remember
         </button>
       </div>
     </div>
   );
+}
+
+/** "1st–3rd grade" style label across a span of years. */
+function gradeSpan(from: number, to: number, birthYear: number): string | null {
+  const a = gradeLabel(from, birthYear);
+  const b = gradeLabel(to, birthYear);
+  if (!a || !b) return a ?? b;
+  if (from === to) return a;
+  const first = a.split('–')[0].replace(' grade', '');
+  const last = b.includes('–') ? b.split('–')[1] : b;
+  return `${first}–${last}`;
 }
 
 function Milestone({ year, label, now }: { year: number; label: string; now?: boolean }) {

@@ -24,10 +24,10 @@ export async function loadSampleLife() {
     ids.set(name, existing?.id ?? (await createPerson({ name, relationship, avatar: null, notes: '' })).id);
   }
 
-  type Extra = Partial<MemoryDraft> & { people?: string[] };
+  type Extra = Partial<MemoryDraft> & { people?: string[]; toldBy?: string[] };
   const entries: [string, string, FuzzyDate, Extra][] = [
-    ['The yellow kitchen on Maple Street', 'Linoleum floor with little brown squares. Mom singing along to the radio while making pancakes on Sunday mornings.', { precision: 'age', age: 4, ageEnd: 6 }, { clarity: 'partial', feeling: 'tender', location: 'Maple Street house', people: ['Mom'], tags: ['home'] }],
-    ['Lost tooth at the zoo', 'Bit into a caramel apple by the elephant enclosure. Dad wrapped the tooth in a napkin.', { precision: 'season', year: 1995, season: 'summer' }, { clarity: 'vivid', feeling: 'joyful', people: ['Dad'], location: 'City Zoo' }],
+    ['The yellow kitchen on Maple Street', 'Linoleum floor with little brown squares. Mom singing along to the radio while making pancakes on Sunday mornings.', { precision: 'age', age: 4, ageEnd: 6 }, { clarity: 'partial', feeling: 'tender', location: 'Maple Street house', people: ['Mom'], tags: ['home'], source: 'mixed', toldBy: ['Mom'] }],
+    ['Lost tooth at the zoo', 'Bit into a caramel apple by the elephant enclosure. Dad wrapped the tooth in a napkin.', { precision: 'season', year: 1995, season: 'summer' }, { clarity: 'vivid', feeling: 'joyful', people: ['Dad'], location: 'City Zoo', source: 'told', toldBy: ['Dad'] }],
     ['Mrs. Alvarez’s classroom', 'Second grade. She let me feed the class hamster and read my story out loud to everyone.', { precision: 'year', year: 1996, circa: true }, { clarity: 'partial', feeling: 'proud', people: ['Mrs. Alvarez'], tags: ['school'] }],
     ['Fort in the backyard woods', 'Built with Danny from next door out of pallets and a tarp. We called it “the base.”', { precision: 'range', year: 1997, endYear: 1999 }, { clarity: 'faint', feeling: 'joyful', people: ['Danny'], tags: ['friends'] }],
     ['First snow day I remember', '', { precision: 'month', year: 1997, month: 1 }, { clarity: 'faint', feeling: 'calm' }],
@@ -39,11 +39,16 @@ export async function loadSampleLife() {
     ['Graduation', 'Hot gym, too-long gown. Grandma came even though it was hard for her to travel.', { precision: 'day', year: 2006, month: 5, day: 27 }, { clarity: 'vivid', feeling: 'proud', people: ['Grandma', 'Mom', 'Dad'], tags: ['milestone'] }],
     ['A song on the radio at the lake', 'Can’t remember what year — just the dock, the song, and feeling completely free.', { precision: 'unknown' }, { clarity: 'faint', feeling: 'calm' }],
   ];
-  for (const [title, notes, date, { people = [], ...extra }] of entries) {
+  for (const [title, notes, date, { people = [], toldBy = [], ...extra }] of entries) {
     const personIds = people.map((n) => ids.get(n)!).filter(Boolean);
-    await createMemory(emptyDraft({ title, notes, date, personIds, ...extra }));
+    const sourcePersonIds = toldBy.map((n) => ids.get(n)!).filter(Boolean);
+    await createMemory(emptyDraft({ title, notes, date, personIds, sourcePersonIds, ...extra }));
   }
   if ((await db.chapters.count()) === 0) {
     for (const c of suggestedChapters(birthYear)) await saveChapter(c);
+    await saveChapter({ kind: 'home', title: 'Maple Street house', detail: 'Columbus, OH', startYear: 1988, endYear: 2001, color: 'sand' });
+    await saveChapter({ kind: 'home', title: 'Oak Hill house', detail: 'Austin, TX', startYear: 2001, endYear: 2006, color: 'sand' });
+    await saveChapter({ kind: 'milestone', title: 'Moved to Austin', detail: '', startYear: 2001, endYear: 2001, color: 'sand' });
+    await saveChapter({ kind: 'work', title: 'H-E-B bagger', detail: 'After school', startYear: 2004, endYear: 2006, color: 'sand' });
   }
 }

@@ -9,7 +9,7 @@ export function MoreScreen() {
   const unplaced = memories.filter((m) => m.groupYear == null).length;
   const rows = [
     { to: '/unplaced', icon: Inbox, label: 'Unplaced', detail: unplaced ? `${unplaced} waiting for a date` : 'Nothing waiting', badge: unplaced },
-    { to: '/chapters', icon: BookOpen, label: 'Chapters', detail: chapters.length ? `${chapters.length} eras` : 'Name the eras of your life', badge: 0 },
+    { to: '/frame', icon: BookOpen, label: 'Life frame', detail: chapters.length ? `${chapters.length} reference points` : 'Homes, school, work, milestones', badge: 0 },
     { to: '/settings', icon: Settings, label: 'Settings', detail: 'Profile, appearance, backups', badge: 0 },
   ];
   return (

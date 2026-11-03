@@ -14,7 +14,7 @@ import {
 import { useMemories, useSettings } from '../hooks/data';
 import { formatFuzzyDate, fuzzyFromIso } from '../lib/fuzzyDate';
 import { appendDictation, type VoiceClip } from '../lib/speech';
-import { CLARITY, FEELINGS } from '../lib/meta';
+import { CLARITY, FEELINGS, SOURCES } from '../lib/meta';
 import { useApp } from '../state/app';
 import { FuzzyDatePicker } from './FuzzyDatePicker';
 import { PeoplePicker } from './People';
@@ -235,6 +235,38 @@ function MemoryEditor({ onClose }: { onClose: () => void }) {
               onChange={(v) => set('clarity', v)}
               options={CLARITY.map((c) => ({ value: c.value, label: c.label }))}
             />
+          </section>
+
+          <section>
+            <FieldLabel hint={SOURCES.find((x) => x.value === (draft.source ?? 'remembered'))?.description}>
+              Where does this come from?
+            </FieldLabel>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Where this memory comes from">
+              {SOURCES.map((o) => {
+                const on = (draft.source ?? 'remembered') === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => set('source', o.value)}
+                    className={cx(
+                      'h-9 rounded-full border px-3.5 text-sm font-medium transition-colors',
+                      on ? 'border-ink bg-ink text-paper' : 'border-line bg-paper text-graphite hover:text-ink',
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            {(draft.source === 'told' || draft.source === 'mixed') && (
+              <div className="mt-4">
+                <p className="mb-2 text-sm font-medium text-ink">Who told you?</p>
+                <PeoplePicker value={draft.sourcePersonIds ?? []} onChange={(ids) => set('sourcePersonIds', ids)} />
+              </div>
+            )}
           </section>
 
           <section>

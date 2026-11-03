@@ -1,5 +1,5 @@
 /**
- * Core domain types for Driftwood.
+ * Core domain types for Lantern.
  *
  * Memories rarely come with exact dates, so the date model is "fuzzy": a
  * memory can be pinned to a day, a month, a season, a year, an age, a range of
@@ -41,6 +41,13 @@ export interface FuzzyDate {
 
 export type Clarity = 'vivid' | 'partial' | 'faint';
 
+/**
+ * Where a memory comes from. Psychologists distinguish "remembering" an event
+ * from "knowing" about it from someone else or from a photo; reconstructing a
+ * past honestly means keeping that difference visible.
+ */
+export type MemorySource = 'remembered' | 'told' | 'record' | 'mixed';
+
 export type Feeling =
   | 'joyful'
   | 'proud'
@@ -70,12 +77,18 @@ export interface Memory {
   tags: string[];
   feeling: Feeling | null;
   clarity: Clarity;
+  /** Where the memory comes from. Missing on memories written before this existed. */
+  source?: MemorySource;
+  /** Who told you about it, when source is 'told' or 'mixed'. */
+  sourcePersonIds?: string[];
   photoIds: string[];
   favorite: boolean;
   /** Hidden behind a tap-to-reveal veil on the timeline. */
   isPrivate: boolean;
   /** The reflection prompt that sparked this memory, if any. */
   promptId: string | null;
+  /** Text of the prompt, kept for prompts generated on the fly (gap prompts). */
+  promptText?: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -118,15 +131,32 @@ export interface Recording {
 
 export type ChapterColor = 'sage' | 'clay' | 'sky' | 'plum' | 'sand' | 'rose';
 
+/**
+ * Kinds of reference point in the life frame.
+ * - stage: a stretch of life (school years, "the Denver years"); colours the timeline spine
+ * - home / work / relationship: context that runs alongside memories
+ * - milestone: a single moment that anchors everything around it (moving, graduating)
+ */
+export type AnchorKind = 'stage' | 'home' | 'work' | 'relationship' | 'milestone';
+
+/**
+ * A reference point in the life frame. (Stored in the `chapters` table for
+ * historical reasons; "chapter" and "anchor" mean the same thing in code.)
+ */
 export interface Chapter {
   id: string;
+  kind: AnchorKind;
   title: string;
+  /** Optional specifics: a school name, an address, an employer. */
+  detail: string;
   startYear: number;
-  /** Inclusive. */
+  /** Inclusive. Equal to startYear for milestones. */
   endYear: number;
   color: ChapterColor;
   createdAt: number;
 }
+
+export type Anchor = Chapter;
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -137,6 +167,10 @@ export interface Settings {
   onboarded: boolean;
   /** Show empty-year "gaps" on the timeline as gentle prompts. */
   showGaps: boolean;
+  /** Show the (U.S.) school grade for each year of childhood. */
+  showGrades: boolean;
+  /** Life-frame suggestions the person said no to. */
+  frameDismissed: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -145,4 +179,6 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   onboarded: false,
   showGaps: true,
+  showGrades: true,
+  frameDismissed: [],
 };

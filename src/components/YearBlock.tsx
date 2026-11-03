@@ -1,6 +1,8 @@
 import { chapterVar } from '../lib/meta';
 import type { Chapter, Memory } from '../types';
+import { FrameContext } from './FrameContext';
 import { MemoryEntry } from './MemoryEntry';
+import type { YearContext } from '../lib/frame';
 
 /** One year on the spine: sticky numeral + age on the left, memories on the right. */
 export function YearBlock({
@@ -10,6 +12,7 @@ export function YearBlock({
   chapter,
   lastTouched,
   anchor = true,
+  context,
 }: {
   year: number;
   birthYear: number | null;
@@ -18,6 +21,8 @@ export function YearBlock({
   lastTouched?: string | null;
   /** Register a #y-YEAR anchor for the decade jump bar. */
   anchor?: boolean;
+  /** Reference points from the life frame for this year. */
+  context?: YearContext;
 }) {
   const age = birthYear != null ? year - birthYear : null;
   return (
@@ -28,14 +33,17 @@ export function YearBlock({
           {age != null && age >= 0 && <div className="mt-1 text-xs text-graphite">{age === 0 ? 'Birth year' : `Age ${age}`}</div>}
         </div>
       </div>
-      <ol
+      <div
         className="relative min-w-0 flex-1 border-l-2 pb-6 pl-5"
         style={{ borderColor: chapter ? chapterVar(chapter.color) : 'var(--line)' }}
       >
-        {items.map((m) => (
-          <MemoryEntry key={m.id} memory={m} birthYear={birthYear} highlight={lastTouched === m.id} />
-        ))}
-      </ol>
+        {context && <FrameContext {...context} className="pb-1 pt-3" />}
+        <ol>
+          {items.map((m) => (
+            <MemoryEntry key={m.id} memory={m} birthYear={birthYear} highlight={lastTouched === m.id} />
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }

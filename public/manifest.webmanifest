@@ -1,7 +1,7 @@
 {
-  "name": "Driftwood",
-  "short_name": "Driftwood",
-  "description": "Collect memories as they come back and place them on the timeline of your life.",
+  "name": "Lantern",
+  "short_name": "Lantern",
+  "description": "Rebuild the story of your life: capture memories as they come back and see the years that are still quiet.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#F2F3EF",

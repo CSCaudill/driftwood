@@ -1,4 +1,4 @@
-import type { ChapterColor, Clarity, Feeling } from '../types';
+import type { ChapterColor, Clarity, Feeling, MemorySource } from '../types';
 
 export const FEELINGS: { value: Feeling; label: string; color: string }[] = [
   { value: 'joyful', label: 'Joyful', color: '#E3B341' },
@@ -9,6 +9,27 @@ export const FEELINGS: { value: Feeling; label: string; color: string }[] = [
   { value: 'difficult', label: 'Difficult', color: '#7D8790' },
 ];
 export const feelingMeta = (f: Feeling | null) => FEELINGS.find((x) => x.value === f);
+
+export const SOURCES: { value: MemorySource; label: string; description: string }[] = [
+  { value: 'remembered', label: 'I remember it', description: 'You can recall it yourself, even faintly' },
+  { value: 'told', label: 'I was told', description: 'Someone else told you about it' },
+  { value: 'record', label: 'From a photo or video', description: 'You know it from a picture, video or document' },
+  { value: 'mixed', label: 'Some of each', description: 'Part memory, part what you’ve been told or seen' },
+];
+
+/** Short label for a memory's source, or null when there's nothing to flag. */
+export function sourceLabel(source: MemorySource | undefined, tellers: string[]): string | null {
+  switch (source) {
+    case 'told':
+      return tellers.length ? `Told by ${tellers.join(', ')}` : 'Told to you';
+    case 'record':
+      return 'From a photo or video';
+    case 'mixed':
+      return tellers.length ? `Partly from ${tellers.join(', ')}` : 'Partly remembered';
+    default:
+      return null;
+  }
+}
 
 export const CLARITY: { value: Clarity; label: string; description: string }[] = [
   { value: 'vivid', label: 'Vivid', description: 'I can see it clearly' },

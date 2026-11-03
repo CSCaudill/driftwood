@@ -1,13 +1,13 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DriftwoodDB } from './db';
+import { LanternDB } from './db';
 import Dexie from 'dexie';
 import { createMemory, createPerson, deletePerson, emptyDraft, moveMemory, updateMemory, updateSettings } from './repo';
 import { orderSection } from '../lib/ordering';
 
-let store: DriftwoodDB;
+let store: LanternDB;
 beforeEach(async () => {
-  store = new DriftwoodDB('test-' + Math.random());
+  store = new LanternDB('test-' + Math.random());
   await store.open();
 });
 
@@ -73,7 +73,7 @@ describe('people', () => {
     ]);
     v1.close();
 
-    const v2 = new DriftwoodDB(name);
+    const v2 = new LanternDB(name);
     await v2.open();
     const people = await v2.people.toArray();
     expect(people.map((p) => p.name).sort()).toEqual(['Danny', 'Mom']);
@@ -92,5 +92,35 @@ describe('people', () => {
     await deletePerson(p.id, store);
     expect((await store.memories.get(m.id))!.personIds).toEqual([]);
     expect(await store.people.get(p.id)).toBeUndefined();
+  });
+});
+
+describe('life frame migration', () => {
+  it('turns v2 chapters into stage anchors', async () => {
+    const name = 'frame-' + Math.random();
+    const v2 = new Dexie(name);
+    v2.version(2).stores({ memories: 'id, groupYear, sortStart, updatedAt, createdAt, favorite, promptId, *tags, *personIds', photos: 'id, memoryId', chapters: 'id, startYear', meta: 'key', people: 'id, name', recordings: 'id, memoryId' });
+    await v2.table('chapters').add({ id: 'c1', title: 'High school', startYear: 2002, endYear: 2005, color: 'clay', createdAt: 1 });
+    v2.close();
+    const v3 = new LanternDB(name);
+    await v3.open();
+    const c = await v3.chapters.get('c1');
+    expect(c).toMatchObject({ kind: 'stage', detail: '', title: 'High school' });
+    expect(await v3.chapters.where('kind').equals('stage').count()).toBe(1);
+  });
+});
+
+describe('rename carry-over', () => {
+  it('copies data from the old database name into an empty new one', async () => {
+    const { adoptLegacyDatabase } = await import('./db');
+    await Dexie.delete('driftwood');
+    const old = new LanternDB('driftwood');
+    await createMemory(year('from before the rename', 1999), old);
+    old.close();
+    const fresh = new LanternDB('lantern-test-' + Math.random());
+    expect(await adoptLegacyDatabase(fresh)).toBe(true);
+    expect((await fresh.memories.toArray()).map((m) => m.title)).toEqual(['from before the rename']);
+    // never overwrites a database that already has data
+    expect(await adoptLegacyDatabase(fresh)).toBe(false);
   });
 });

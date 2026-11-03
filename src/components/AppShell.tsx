@@ -13,7 +13,7 @@ const NAV: NavItem[] = [
   { to: '/reflect', label: 'Reflect', icon: Feather },
   { to: '/people', label: 'People', icon: Users },
   { to: '/unplaced', label: 'Unplaced', icon: Inbox },
-  { to: '/chapters', label: 'Chapters', icon: BookOpen },
+  { to: '/frame', label: 'Life frame', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-paper/60 px-4 py-6 lg:flex">
         <div className="flex items-center gap-2.5 px-2">
           <img src="./icon.svg" alt="" className="h-8 w-8 rounded-[9px]" />
-          <span className="display text-lg font-semibold">Driftwood</span>
+          <span className="display text-lg font-semibold">Lantern</span>
         </div>
         <button
           onClick={() => openEditor()}
@@ -120,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function Tab({ to, label, icon: Icon, end, badge }: NavItem & { badge: number }) {
   const { pathname } = useLocation();
-  const moreActive = ['/unplaced', '/chapters', '/settings'].some((p) => pathname.startsWith(p));
+  const moreActive = ['/unplaced', '/frame', '/settings'].some((p) => pathname.startsWith(p));
   const peopleActive = pathname.startsWith('/people');
   return (
     <NavLink

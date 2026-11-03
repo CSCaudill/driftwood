@@ -14,7 +14,7 @@ const COLORS: ChapterColor[] = ['sage', 'sky', 'clay', 'plum', 'sand', 'rose'];
  * in the iOS WKWebView shell. Everything stays on the device unless the user
  * exports a backup.
  */
-export class DriftwoodDB extends Dexie {
+export class LanternDB extends Dexie {
   memories!: EntityTable<Memory, 'id'>;
   photos!: EntityTable<Photo, 'id'>;
   chapters!: EntityTable<Chapter, 'id'>;
@@ -22,7 +22,7 @@ export class DriftwoodDB extends Dexie {
   recordings!: EntityTable<Recording, 'id'>;
   meta!: EntityTable<MetaRow, 'key'>;
 
-  constructor(name = 'driftwood') {
+  constructor(name = 'lantern') {
     super(name);
     this.version(1).stores({
       memories: 'id, groupYear, sortStart, updatedAt, createdAt, favorite, *tags, *people',
@@ -71,9 +71,50 @@ export class DriftwoodDB extends Dexie {
           });
         if (people.length) await tx.table('people').bulkAdd(people);
       });
+
+    // v3: chapters become life-frame anchors with a kind and optional detail.
+    this.version(3)
+      .stores({ chapters: 'id, startYear, kind' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('chapters')
+          .toCollection()
+          .modify((c: Record<string, unknown>) => {
+            c.kind ??= 'stage';
+            c.detail ??= '';
+          });
+      });
   }
 }
 
-export const db = new DriftwoodDB();
+export const db = new LanternDB();
+
+/** Database names the app used before it was called Lantern. */
+const LEGACY_NAMES = ['driftwood', 'lifeline'];
+
+/**
+ * One-time carry-over after a rename: if this device has data under an old
+ * database name and nothing under the new one, copy it across. The old
+ * database is left in place as a safety net.
+ */
+export async function adoptLegacyDatabase(target: LanternDB = db): Promise<boolean> {
+  if ((await target.meta.count()) > 0 || (await target.memories.count()) > 0) return false;
+  for (const name of LEGACY_NAMES) {
+    if (!(await Dexie.exists(name))) continue;
+    const old = new LanternDB(name);
+    try {
+      await old.open();
+      const tables = ['memories', 'photos', 'chapters', 'people', 'recordings', 'meta'] as const;
+      const rows = await Promise.all(tables.map((t) => old.table(t).toArray()));
+      await target.transaction('rw', tables.map((t) => target.table(t)), async () => {
+        await Promise.all(tables.map((t, i) => target.table(t).bulkPut(rows[i])));
+      });
+      return true;
+    } finally {
+      old.close();
+    }
+  }
+  return false;
+}
 
 export type { MetaRow, Settings };

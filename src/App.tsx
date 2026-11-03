@@ -3,7 +3,7 @@ import { HashRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { MemoryEditorHost } from './components/MemoryEditor';
 import { useMediaQuery, useSettings } from './hooks/data';
-import { ChaptersScreen } from './screens/ChaptersScreen';
+import { FrameScreen } from './screens/FrameScreen';
 import { MoreScreen } from './screens/MoreScreen';
 import { PeopleScreen } from './screens/PeopleScreen';
 import { PersonScreen } from './screens/PersonScreen';
@@ -58,7 +58,8 @@ export default function App() {
               <Route path="/people/:id" element={<PersonScreen />} />
               <Route path="/more" element={<MoreScreen />} />
               <Route path="/unplaced" element={<UnplacedScreen />} />
-              <Route path="/chapters" element={<ChaptersScreen />} />
+              <Route path="/frame" element={<FrameScreen />} />
+              <Route path="/chapters" element={<FrameScreen />} />
               <Route path="/settings" element={<SettingsScreen />} />
               <Route path="/memory/:id" element={<MemoryScreen />} />
               <Route path="*" element={<TimelineScreen />} />

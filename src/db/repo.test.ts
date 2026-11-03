@@ -94,3 +94,18 @@ describe('people', () => {
     expect(await store.people.get(p.id)).toBeUndefined();
   });
 });
+
+describe('life frame migration', () => {
+  it('turns v2 chapters into stage anchors', async () => {
+    const name = 'frame-' + Math.random();
+    const v2 = new Dexie(name);
+    v2.version(2).stores({ memories: 'id, groupYear, sortStart, updatedAt, createdAt, favorite, promptId, *tags, *personIds', photos: 'id, memoryId', chapters: 'id, startYear', meta: 'key', people: 'id, name', recordings: 'id, memoryId' });
+    await v2.table('chapters').add({ id: 'c1', title: 'High school', startYear: 2002, endYear: 2005, color: 'clay', createdAt: 1 });
+    v2.close();
+    const v3 = new DriftwoodDB(name);
+    await v3.open();
+    const c = await v3.chapters.get('c1');
+    expect(c).toMatchObject({ kind: 'stage', detail: '', title: 'High school' });
+    expect(await v3.chapters.where('kind').equals('stage').count()).toBe(1);
+  });
+});

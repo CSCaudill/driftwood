@@ -76,6 +76,8 @@ export interface Memory {
   isPrivate: boolean;
   /** The reflection prompt that sparked this memory, if any. */
   promptId: string | null;
+  /** Text of the prompt, kept for prompts generated on the fly (gap prompts). */
+  promptText?: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -118,15 +120,32 @@ export interface Recording {
 
 export type ChapterColor = 'sage' | 'clay' | 'sky' | 'plum' | 'sand' | 'rose';
 
+/**
+ * Kinds of reference point in the life frame.
+ * - stage: a stretch of life (school years, "the Denver years"); colours the timeline spine
+ * - home / work / relationship: context that runs alongside memories
+ * - milestone: a single moment that anchors everything around it (moving, graduating)
+ */
+export type AnchorKind = 'stage' | 'home' | 'work' | 'relationship' | 'milestone';
+
+/**
+ * A reference point in the life frame. (Stored in the `chapters` table for
+ * historical reasons; "chapter" and "anchor" mean the same thing in code.)
+ */
 export interface Chapter {
   id: string;
+  kind: AnchorKind;
   title: string;
+  /** Optional specifics: a school name, an address, an employer. */
+  detail: string;
   startYear: number;
-  /** Inclusive. */
+  /** Inclusive. Equal to startYear for milestones. */
   endYear: number;
   color: ChapterColor;
   createdAt: number;
 }
+
+export type Anchor = Chapter;
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -137,6 +156,10 @@ export interface Settings {
   onboarded: boolean;
   /** Show empty-year "gaps" on the timeline as gentle prompts. */
   showGaps: boolean;
+  /** Show the (U.S.) school grade for each year of childhood. */
+  showGrades: boolean;
+  /** Life-frame suggestions the person said no to. */
+  frameDismissed: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -145,4 +168,6 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   onboarded: false,
   showGaps: true,
+  showGrades: true,
+  frameDismissed: [],
 };

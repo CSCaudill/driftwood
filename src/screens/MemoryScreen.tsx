@@ -12,6 +12,7 @@ import { formatFuzzyDate, precisionLabel } from '../lib/fuzzyDate';
 import { CLARITY, chapterVar, feelingMeta } from '../lib/meta';
 import { buildSections } from '../lib/ordering';
 import { promptById } from '../lib/prompts';
+import { stageFor } from '../lib/frame';
 import { useApp } from '../state/app';
 import type { Photo } from '../types';
 
@@ -53,9 +54,9 @@ export function MemoryScreen() {
   const clarity = CLARITY.find((c) => c.value === memory.clarity)!;
   const chapter =
     memory.groupYear != null
-      ? chapters.find((c) => memory.groupYear! >= c.startYear && memory.groupYear! <= c.endYear)
+      ? stageFor(chapters, memory.groupYear)
       : undefined;
-  const prompt = promptById(memory.promptId);
+  const promptText = memory.promptText ?? promptById(memory.promptId)?.text;
 
   const remove = async () => {
     const snapshot = memory;
@@ -160,8 +161,8 @@ export function MemoryScreen() {
           </div>
         )}
 
-        {prompt && (
-          <p className="reading mt-6 border-l-2 border-tide pl-4 text-[0.95rem] italic text-graphite">{prompt.text}</p>
+        {promptText && (
+          <p className="reading mt-6 border-l-2 border-tide pl-4 text-[0.95rem] italic text-graphite">{promptText}</p>
         )}
 
         {memory.notes ? (

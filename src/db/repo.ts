@@ -2,6 +2,7 @@ import { db, type DriftwoodDB } from './db';
 import { newId } from '../lib/id';
 import { resolveBounds, shiftToYear } from '../lib/fuzzyDate';
 import { orderSection, rankForMove } from '../lib/ordering';
+import { suggestFrame } from '../lib/frame';
 import {
   DEFAULT_SETTINGS,
   type Chapter,
@@ -38,6 +39,7 @@ export function emptyDraft(partial: Partial<MemoryDraft> = {}): MemoryDraft {
     favorite: false,
     isPrivate: false,
     promptId: null,
+    promptText: null,
     ...partial,
   };
 }
@@ -290,9 +292,13 @@ export interface ReflectionState {
   skipped: string[];
   /** Recently shown, so shuffling doesn't repeat itself. */
   recent: string[];
+  /** Years the person is focusing on (gap prompts), or null for general prompts. */
+  focus: { from: number; to: number } | null;
+  /** Text of generated prompts that have drafts, keyed by prompt id. */
+  promptTexts: Record<string, string>;
 }
 
-const EMPTY_REFLECTION: ReflectionState = { promptId: null, drafts: {}, skipped: [], recent: [] };
+const EMPTY_REFLECTION: ReflectionState = { promptId: null, drafts: {}, skipped: [], recent: [], focus: null, promptTexts: {} };
 
 export async function getReflection(store: DriftwoodDB = db): Promise<ReflectionState> {
   const row = await store.meta.get('reflection');
@@ -308,7 +314,7 @@ export async function saveReflection(patch: Partial<ReflectionState>, store: Dri
 // ---------------------------------------------------------------- chapters
 
 export async function saveChapter(
-  chapter: Omit<Chapter, 'id' | 'createdAt'> & { id?: string },
+  chapter: Omit<Chapter, 'id' | 'createdAt' | 'kind' | 'detail'> & { id?: string; kind?: Chapter['kind']; detail?: string },
   store: DriftwoodDB = db,
 ): Promise<Chapter> {
   const existing = chapter.id ? await store.chapters.get(chapter.id) : undefined;
@@ -318,6 +324,8 @@ export async function saveChapter(
       : [chapter.endYear, chapter.startYear];
   const row: Chapter = {
     ...chapter,
+    kind: chapter.kind ?? existing?.kind ?? 'stage',
+    detail: (chapter.detail ?? existing?.detail ?? '').trim(),
     startYear,
     endYear,
     title: chapter.title.trim(),
@@ -332,23 +340,11 @@ export async function deleteChapter(id: string, store: DriftwoodDB = db) {
   await store.chapters.delete(id);
 }
 
-/** Starter chapters based on a birth year — the user can rename or delete them. */
+/** Starter stages of life for a birth year (used by onboarding and the sample life). */
 export function suggestedChapters(birthYear: number, thisYear = new Date().getFullYear()) {
-  const stages: [string, number, number, Chapter['color']][] = [
-    ['Early childhood', 0, 5, 'sand'],
-    ['Grade school', 6, 11, 'sky'],
-    ['Middle school', 12, 13, 'sage'],
-    ['High school', 14, 17, 'clay'],
-    ['Early adulthood', 18, 24, 'plum'],
-  ];
-  return stages
-    .map(([title, a, b, color]) => ({
-      title,
-      startYear: birthYear + a,
-      endYear: Math.min(birthYear + b, thisYear),
-      color,
-    }))
-    .filter((c) => c.startYear <= thisYear);
+  return suggestFrame(birthYear, [], [], thisYear)
+    .filter((s) => s.kind === 'stage')
+    .map(({ kind, title, startYear, endYear, color }) => ({ kind, title, startYear, endYear, color }));
 }
 
 export async function wipeEverything(store: DriftwoodDB = db) {

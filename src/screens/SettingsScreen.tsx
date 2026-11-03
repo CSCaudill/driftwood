@@ -95,7 +95,13 @@ export function SettingsScreen() {
           checked={settings.showGaps}
           onChange={(showGaps) => updateSettings({ showGaps })}
           label="Show empty years"
-          description="Marks stretches with no memories yet, with a shortcut to add one."
+          description="Marks stretches with no memories yet, with prompts to help fill them."
+        />
+        <Toggle
+          checked={settings.showGrades}
+          onChange={(showGrades) => updateSettings({ showGrades })}
+          label="Show school grades"
+          description="Adds the U.S. school grade to each childhood year, worked out from your birth year."
         />
       </Group>
 

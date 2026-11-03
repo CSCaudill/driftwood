@@ -45,5 +45,9 @@ export async function loadSampleLife() {
   }
   if ((await db.chapters.count()) === 0) {
     for (const c of suggestedChapters(birthYear)) await saveChapter(c);
+    await saveChapter({ kind: 'home', title: 'Maple Street house', detail: 'Columbus, OH', startYear: 1988, endYear: 2001, color: 'sand' });
+    await saveChapter({ kind: 'home', title: 'Oak Hill house', detail: 'Austin, TX', startYear: 2001, endYear: 2006, color: 'sand' });
+    await saveChapter({ kind: 'milestone', title: 'Moved to Austin', detail: '', startYear: 2001, endYear: 2001, color: 'sand' });
+    await saveChapter({ kind: 'work', title: 'H-E-B bagger', detail: 'After school', startYear: 2004, endYear: 2006, color: 'sand' });
   }
 }

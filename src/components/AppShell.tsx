@@ -13,7 +13,7 @@ const NAV: NavItem[] = [
   { to: '/reflect', label: 'Reflect', icon: Feather },
   { to: '/people', label: 'People', icon: Users },
   { to: '/unplaced', label: 'Unplaced', icon: Inbox },
-  { to: '/chapters', label: 'Chapters', icon: BookOpen },
+  { to: '/frame', label: 'Life frame', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -120,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function Tab({ to, label, icon: Icon, end, badge }: NavItem & { badge: number }) {
   const { pathname } = useLocation();
-  const moreActive = ['/unplaced', '/chapters', '/settings'].some((p) => pathname.startsWith(p));
+  const moreActive = ['/unplaced', '/frame', '/settings'].some((p) => pathname.startsWith(p));
   const peopleActive = pathname.startsWith('/people');
   return (
     <NavLink

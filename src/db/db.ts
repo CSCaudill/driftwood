@@ -71,6 +71,19 @@ export class DriftwoodDB extends Dexie {
           });
         if (people.length) await tx.table('people').bulkAdd(people);
       });
+
+    // v3: chapters become life-frame anchors with a kind and optional detail.
+    this.version(3)
+      .stores({ chapters: 'id, startYear, kind' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('chapters')
+          .toCollection()
+          .modify((c: Record<string, unknown>) => {
+            c.kind ??= 'stage';
+            c.detail ??= '';
+          });
+      });
   }
 }
 

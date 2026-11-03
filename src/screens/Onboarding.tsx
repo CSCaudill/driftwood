@@ -53,8 +53,9 @@ export function Onboarding() {
             <label className="flex items-start gap-3 rounded-2xl bg-paper p-4">
               <input type="checkbox" checked={chapters} onChange={(e) => setChapters(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--tide)]" />
               <span className="text-sm text-graphite">
-                <span className="block font-medium text-ink">Add school-year chapters</span>
-                Early childhood through early adulthood, as a scaffold. You can rename or remove them.
+                <span className="block font-medium text-ink">Start my life frame</span>
+                Adds school years and stages of life as reference points on your timeline. You can rename, adjust or remove
+                them, and add homes, work and milestones later.
               </span>
             </label>
           )}

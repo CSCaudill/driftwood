@@ -8,7 +8,7 @@ import { Button, Chip, EmptyState, IconButton, cx } from '../components/ui';
 import { useChapters, useMemories, useSettings } from '../hooks/data';
 import { loadSampleLife } from '../lib/sample';
 import { updateSettings } from '../db/repo';
-import { chapterVar, FEELINGS } from '../lib/meta';
+import { chapterVar, FEELINGS, SOURCES } from '../lib/meta';
 import { buildSections } from '../lib/ordering';
 import { currentYear } from '../lib/fuzzyDate';
 import { useApp } from '../state/app';
@@ -17,7 +17,7 @@ import { contextForRange, contextForYear, gradeLabel, stageFor } from '../lib/fr
 import { splitByStage } from '../lib/gapPrompts';
 import { usePeopleLookup } from '../state/people';
 import { PersonAvatar } from '../components/People';
-import type { Chapter, Feeling, Memory } from '../types';
+import type { Chapter, Feeling, Memory, MemorySource } from '../types';
 
 type Row =
   | { kind: 'year'; year: number; items: Memory[] }
@@ -35,10 +35,11 @@ export function TimelineScreen() {
   const [favOnly, setFavOnly] = useState(false);
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [personId, setPersonId] = useState<string | null>(null);
+  const [source, setSource] = useState<MemorySource | null>(null);
   const peopleMap = usePeopleLookup();
   const searchInput = useRef<HTMLInputElement>(null);
 
-  const filtering = !!query.trim() || favOnly || !!feeling || !!personId;
+  const filtering = !!query.trim() || favOnly || !!feeling || !!personId || !!source;
   const filtered = useMemo(() => {
     if (!memories) return [];
     const q = query.trim().toLowerCase();
@@ -46,6 +47,7 @@ export function TimelineScreen() {
       if (favOnly && !m.favorite) return false;
       if (feeling && m.feeling !== feeling) return false;
       if (personId && !m.personIds.includes(personId)) return false;
+      if (source && (m.source ?? 'remembered') !== source) return false;
       if (!q) return true;
       const names = m.personIds.map((id) => {
         const p = peopleMap.get(id);
@@ -54,7 +56,7 @@ export function TimelineScreen() {
       const hay = [m.title, m.notes, m.location, ...names, ...m.tags].join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [memories, query, favOnly, feeling, personId, peopleMap]);
+  }, [memories, query, favOnly, feeling, personId, source, peopleMap]);
 
   // People who appear most, for the filter row.
   const topPeople = useMemo(() => {
@@ -127,7 +129,7 @@ export function TimelineScreen() {
             </p>
           </div>
           {!arranging && (
-            <IconButton label="Search memories" active={searching} onClick={() => { setSearching((s) => !s); if (searching) { setQuery(''); setFavOnly(false); setFeeling(null); setPersonId(null); } }}>
+            <IconButton label="Search memories" active={searching} onClick={() => { setSearching((s) => !s); if (searching) { setQuery(''); setFavOnly(false); setFeeling(null); setPersonId(null); setSource(null); } }}>
               <Search size={20} />
             </IconButton>
           )}
@@ -173,6 +175,11 @@ export function TimelineScreen() {
               <Chip selected={favOnly} onClick={() => setFavOnly((f) => !f)}>
                 <Star size={13} className={favOnly ? 'fill-current' : ''} /> Favorites
               </Chip>
+              {SOURCES.map((o) => (
+                <Chip key={o.value} selected={source === o.value} onClick={() => setSource(source === o.value ? null : o.value)} className="shrink-0">
+                  {o.value === 'remembered' ? 'Remembered' : o.value === 'told' ? 'Told to me' : o.value === 'record' ? 'From photos' : 'Some of each'}
+                </Chip>
+              ))}
               {FEELINGS.map((f) => (
                 <Chip key={f.value} selected={feeling === f.value} onClick={() => setFeeling(feeling === f.value ? null : f.value)} className="shrink-0">
                   <span className="h-2 w-2 rounded-full" style={{ background: f.color }} aria-hidden />

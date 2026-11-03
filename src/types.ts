@@ -41,6 +41,13 @@ export interface FuzzyDate {
 
 export type Clarity = 'vivid' | 'partial' | 'faint';
 
+/**
+ * Where a memory comes from. Psychologists distinguish "remembering" an event
+ * from "knowing" about it from someone else or from a photo; reconstructing a
+ * past honestly means keeping that difference visible.
+ */
+export type MemorySource = 'remembered' | 'told' | 'record' | 'mixed';
+
 export type Feeling =
   | 'joyful'
   | 'proud'
@@ -70,6 +77,10 @@ export interface Memory {
   tags: string[];
   feeling: Feeling | null;
   clarity: Clarity;
+  /** Where the memory comes from. Missing on memories written before this existed. */
+  source?: MemorySource;
+  /** Who told you about it, when source is 'told' or 'mixed'. */
+  sourcePersonIds?: string[];
   photoIds: string[];
   favorite: boolean;
   /** Hidden behind a tap-to-reveal veil on the timeline. */

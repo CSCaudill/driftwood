@@ -199,6 +199,10 @@ export function generateGapPrompts(ctx: GapContext): GapPrompt[] {
     if (seen.size >= 3) break;
   }
 
+  // Someone else may remember this stretch. (Their account is labelled as
+  // "told", never merged into what you remember yourself.)
+  add({ theme: 'people', text: `Who else was around in ${vars.span}? Is there someone you could ask about those years?`, because: 'Someone else may remember', date: rangeDate, ages }, 'ask');
+
   // 4. Stage-of-life questions for the ages in the gap.
   if (midAge != null && midAge >= 0) {
     const bands = new Set([bandFor(from - birthYear!), bandFor(midAge), bandFor(to - birthYear!)]);

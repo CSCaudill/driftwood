@@ -35,6 +35,8 @@ export function emptyDraft(partial: Partial<MemoryDraft> = {}): MemoryDraft {
     tags: [],
     feeling: null,
     clarity: 'partial',
+    source: 'remembered',
+    sourcePersonIds: [],
     photoIds: [],
     favorite: false,
     isPrivate: false,

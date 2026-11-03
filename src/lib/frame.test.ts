@@ -97,3 +97,15 @@ describe('gaps', () => {
     expect(spanLabel(1996, 1998, null)).toBe('1996–1998');
   });
 });
+
+import { sourceLabel } from './meta';
+describe('memory sources', () => {
+  it('labels told, recorded and mixed memories, and stays quiet for remembered ones', () => {
+    expect(sourceLabel('remembered', [])).toBeNull();
+    expect(sourceLabel(undefined, [])).toBeNull();
+    expect(sourceLabel('told', ['Mom', 'Dad'])).toBe('Told by Mom, Dad');
+    expect(sourceLabel('told', [])).toBe('Told to you');
+    expect(sourceLabel('record', [])).toBe('From a photo or video');
+    expect(sourceLabel('mixed', ['Grandma'])).toBe('Partly from Grandma');
+  });
+});

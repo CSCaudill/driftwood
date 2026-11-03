@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Images, Lock, MapPin, Star } from 'lucide-react';
+import { Images, Lock, MapPin, MessageCircle, Star } from 'lucide-react';
 import { usePhotoThumb } from '../hooks/data';
 import { formatFuzzyDateShort, resolveBounds, spanYears } from '../lib/fuzzyDate';
-import { feelingMeta } from '../lib/meta';
+import { feelingMeta, sourceLabel } from '../lib/meta';
 import type { Memory } from '../types';
 import { AvatarStack } from './People';
 import { useResolvedPeople } from '../state/people';
@@ -24,6 +24,8 @@ export function MemoryEntry({
 }) {
   const thumb = usePhotoThumb(memory.photoIds[0]);
   const people = useResolvedPeople(memory.personIds);
+  const tellers = useResolvedPeople(memory.sourcePersonIds ?? []);
+  const source = sourceLabel(memory.source, tellers.map((p) => p.name));
   const [revealed, setRevealed] = useState(false);
   const feeling = feelingMeta(memory.feeling);
   const bounds = resolveBounds(memory.date, birthYear);
@@ -78,6 +80,11 @@ export function MemoryEntry({
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.8rem] text-graphite">
               <span className="font-medium tabular-nums">{formatFuzzyDateShort(memory.date, birthYear)}</span>
               {span > 0 && <span className="text-faint">{span + 1} years</span>}
+              {source && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-sunken px-1.5 py-px text-[0.72rem] text-graphite">
+                  <MessageCircle size={11} aria-hidden /> {source}
+                </span>
+              )}
               {feeling && (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ background: feeling.color }} aria-hidden />

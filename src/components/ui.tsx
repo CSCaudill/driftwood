@@ -66,6 +66,47 @@ export function IconButton({
   );
 }
 
+/**
+ * A small "remove" (×) button that is still easy to hit with a finger: the
+ * visible circle is compact, but the touch target extends to about 44px.
+ * It also keeps focus where it is, so an open keyboard doesn't close and
+ * shift the layout before the tap lands.
+ */
+export function RemoveButton({
+  label,
+  onRemove,
+  className,
+  iconSize = 14,
+}: {
+  label: string;
+  onRemove: () => void;
+  className?: string;
+  iconSize?: number;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onPointerDown={(e) => e.preventDefault()}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onRemove();
+      }}
+      className={cx(
+        // The hit-area span needs a positioned parent; keep callers' absolute positioning intact.
+        !/\babsolute\b/.test(className ?? '') && 'relative',
+        'inline-flex shrink-0 items-center justify-center rounded-full',
+        className,
+      )}
+    >
+      <span aria-hidden className="absolute -inset-2" />
+      <X size={iconSize} />
+    </button>
+  );
+}
+
 // ------------------------------------------------------------------ Form fields
 
 export function FieldLabel({ children, htmlFor, hint }: { children: ReactNode; htmlFor?: string; hint?: ReactNode }) {
@@ -181,7 +222,7 @@ export function Toggle({
       >
         <span
           className={cx(
-            'absolute top-1 h-5 w-5 rounded-full bg-paper shadow-raise transition-transform',
+            'absolute left-0 top-1 h-5 w-5 rounded-full bg-paper shadow-raise transition-transform',
             checked ? 'translate-x-6' : 'translate-x-1',
           )}
         />

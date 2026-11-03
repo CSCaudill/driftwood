@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Mic, Pause, Play, Square, Trash2 } from 'lucide-react';
 import { useBlobUrl } from '../hooks/data';
 import {
@@ -107,8 +107,22 @@ export function DictateButton({
  * Record a voice note to keep with the memory. Hearing yourself tell a memory
  * can hold things the written version doesn't.
  */
-export function VoiceRecorder({ onRecorded }: { onRecorded: (clip: VoiceClip) => void }) {
+export interface RecorderControl {
+  /** Finish a recording in progress; resolves with the clip (or null if none). */
+  stop: () => Promise<VoiceClip | null>;
+}
+
+export function VoiceRecorder({
+  onRecorded,
+  onRecordingChange,
+  controlRef,
+}: {
+  onRecorded: (clip: VoiceClip) => void;
+  onRecordingChange?: (recording: boolean) => void;
+  controlRef?: MutableRefObject<RecorderControl | null>;
+}) {
   const [state, setState] = useState<'idle' | 'starting' | 'recording'>('idle');
+  useEffect(() => onRecordingChange?.(state !== 'idle'), [state, onRecordingChange]);
   const [elapsed, setElapsed] = useState(0);
   const [levels, setLevels] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +174,17 @@ export function VoiceRecorder({ onRecorded }: { onRecorded: (clip: VoiceClip) =>
       if (rec.state === 'recording') rec.stop();
     };
 
+    let settle: (clip: VoiceClip | null) => void = () => {};
+    const finished = new Promise<VoiceClip | null>((res) => (settle = res));
+    if (controlRef) {
+      controlRef.current = {
+        stop: () => {
+          if (rec.state === 'recording') rec.stop();
+          return finished;
+        },
+      };
+    }
+
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
     rec.onstop = () => {
       const durationMs = Date.now() - startedAt;
@@ -167,8 +192,11 @@ export function VoiceRecorder({ onRecorded }: { onRecorded: (clip: VoiceClip) =>
       cleanup.current = () => {};
       setState('idle');
       setElapsed(0);
+      if (controlRef) controlRef.current = null;
       const type = rec.mimeType || mime || 'audio/webm';
-      if (chunks.length && durationMs > 600) onRecorded({ blob: new Blob(chunks, { type }), mime: type, durationMs });
+      const clip = chunks.length && durationMs > 600 ? { blob: new Blob(chunks, { type }), mime: type, durationMs } : null;
+      if (clip) onRecorded(clip);
+      settle(clip);
     };
     recorder.current = rec;
     rec.start(250);
